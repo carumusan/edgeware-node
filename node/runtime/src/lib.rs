@@ -32,7 +32,7 @@ use support::{
 use substrate_primitives::u32_trait::{_1, _2, _3, _4};
 use edgeware_primitives::{
 	AccountId, AccountIndex, AuraId, Balance, BlockNumber, Hash, Index,
-	Moment, Signature,
+	Moment, Signature, ValidityError,
 };
 use grandpa::fg_primitives::{self, ScheduledChange};
 use client::{
@@ -40,10 +40,10 @@ use client::{
 	runtime_api as client_api, impl_runtime_apis
 };
 use runtime_primitives::{ApplyResult, impl_opaque_keys, generic, create_runtime_str, key_types};
-use runtime_primitives::transaction_validity::TransactionValidity;
-use runtime_primitives::weights::Weight;
+use runtime_primitives::transaction_validity::{TransactionValidity, InvalidTransaction, TransactionValidityError};
+use runtime_primitives::weights::{Weight, DispatchInfo};
 use runtime_primitives::traits::{
-	self, BlakeTwo256, Block as BlockT, DigestFor, NumberFor, StaticLookup,
+	self, BlakeTwo256, Block as BlockT, DigestFor, NumberFor, StaticLookup, SignedExtension
 };
 use version::RuntimeVersion;
 use elections::VoteIndex;
@@ -91,7 +91,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
 	// to equal spec_version. If only runtime implementation changes and behavior does not, then
 	// leave spec_version as is and increment impl_version.
 	spec_version: 20,
-	impl_version: 20,
+	impl_version: 21,
 	apis: RUNTIME_API_VERSIONS,
 };
 
@@ -103,6 +103,39 @@ pub fn native_version() -> NativeVersion {
 		can_author_with: Default::default(),
 	}
 }
+
+/// Avoid processing transactions that deal with balances
+///
+/// RELEASE: This is only relevant for the initial soft launch period 
+/// would be removed by a runtime upgrade
+#[derive(Default, Encode, Decode, Clone, Eq, PartialEq)]
+#[cfg_attr(feature = "std", derive(Debug))]
+pub struct EverythingButBalance;
+impl SignedExtension for EverythingButBalance {
+	type AccountId = AccountId;
+	type Call = Call;
+	type AdditionalSigned = ();
+	type Pre = ();
+	fn additional_signed(&self) -> rstd::result::Result<(), TransactionValidityError> { Ok(()) }
+	fn validate(&self, _: &Self::AccountId, call: &Self::Call, _: DispatchInfo, _: usize)
+		-> TransactionValidity
+	{
+		match call {
+			Call::Staking(_) 
+			| Call::Sudo(_) // @TODO Remove sudo for soft launch 
+			| Call::Session(_) 
+			| Call::Democracy(_) 
+			| Call::Treasury(_) 
+			| Call::Elections(_) 
+			| Call::Council(_) 
+			| Call::Contracts(_)
+			=>
+				Ok(Default::default()),
+			_ => Err(InvalidTransaction::Custom(ValidityError::NoPermission.into()).into()),
+		}
+	}
+}
+
 
 type NegativeImbalance = <Balances as Currency<AccountId>>::NegativeImbalance;
 
@@ -153,8 +186,8 @@ impl indices::Trait for Runtime {
 
 parameter_types! {
 	pub const ExistentialDeposit: Balance = 10 * MILLICENTS;
-	// Mainnet genesis tx fee
-	pub const TransferFee: Balance = 9999999999 * DOLLARS;
+	// Switch back to other things
+	pub const TransferFee: Balance = 1 * CENTS;
 	pub const CreationFee: Balance = 1 * CENTS;
 	pub const TransactionBaseFee: Balance = 1 * CENTS;
 	pub const TransactionByteFee: Balance = 10 * MILLICENTS;
@@ -455,6 +488,8 @@ impl system::offchain::CreateTransaction<Runtime, UncheckedExtrinsic> for Runtim
 		let current_block = System::block_number();
 		let tip = 0;
 		let extra: SignedExtra = (
+			// Everything but transfers -> to be removed by a governance vote
+			EverythingButBalance,
 			system::CheckVersion::<Runtime>::new(),
 			system::CheckGenesis::<Runtime>::new(),
 			system::CheckEra::<Runtime>::from(generic::Era::mortal(period, current_block as u64)),
@@ -515,6 +550,7 @@ pub type SignedBlock = generic::SignedBlock<Block>;
 pub type BlockId = generic::BlockId<Block>;
 /// The SignedExtension to the basic transaction logic.
 pub type SignedExtra = (
+	EverythingButBalance,
 	system::CheckVersion<Runtime>,
 	system::CheckGenesis<Runtime>,
 	system::CheckEra<Runtime>,
