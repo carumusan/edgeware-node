@@ -49,16 +49,12 @@ extern crate substrate_transaction_pool as transaction_pool;
 #[macro_use]
 extern crate log;
 
-#[cfg(test)]
-extern crate substrate_keyring;
-
 use std::sync::Arc;
 use std::pin::Pin;
 use std::time::{self, Duration, Instant};
 use codec::Encode;
 use futures_timer::{Delay, Interval};
 use futures03::{future::{self, Either, FutureExt}, task::Context, stream::StreamExt};
-use aura::SlotDuration;
 use client::{BlockBody, BlockchainEvents};
 use client::blockchain::HeaderBackend;
 use client::block_builder::api::BlockBuilder as BlockBuilderApi;
@@ -132,6 +128,8 @@ where
 		let parent_hash = parent_header.hash();
 		let parent_id = BlockId::hash(parent_hash);
 
+        info!("Starting consensus session on top of parent {:?}", parent_hash);
+
 		Ok(Proposer {
 			client: self.client.clone(),
 			parent_hash,
@@ -169,6 +167,10 @@ impl<C, TxApi> consensus::Proposer<Block> for Proposer<C, TxApi> where
         max_duration: Duration,
     ) -> Self::Create {
 		const ATTEMPT_PROPOSE_EVERY: Duration = Duration::from_millis(100);
+        debug!("Attempting propose every: {:?}", ATTEMPT_PROPOSE_EVERY);
+        debug!("Longest to propose for: {:?}", max_duration);
+
+        let now = Instant::now();
 
 		let believed_timestamp = match inherent_data.timestamp_inherent_data() {
 			Ok(timestamp) => timestamp,
@@ -180,6 +182,8 @@ impl<C, TxApi> consensus::Proposer<Block> for Proposer<C, TxApi> where
 		let delay_future = if current_timestamp >= believed_timestamp {
 			None
 		} else {
+            debug!("current_timestep: {:?}", current_timestamp);
+            debug!("believed_timestep: {:?}", believed_timestamp);
 			Some(Delay::new(Duration::from_millis (current_timestamp - believed_timestamp)))
 		};
 
@@ -202,8 +206,8 @@ impl<C, TxApi> consensus::Proposer<Block> for Proposer<C, TxApi> where
 			parent_id: self.parent_id.clone(),
 			client: self.client.clone(),
 			transaction_pool: self.transaction_pool.clone(),
+            believed_minimum_timestamp: believed_timestamp,
             timing,
-			believed_minimum_timestamp: believed_timestamp,
 			inherent_data: Some(inherent_data),
             inherent_digests,
 			// leave some time for the proposal finalisation
@@ -215,8 +219,7 @@ impl<C, TxApi> consensus::Proposer<Block> for Proposer<C, TxApi> where
 fn current_timestamp() -> u64 {
 	time::SystemTime::now().duration_since(time::UNIX_EPOCH)
 		.expect("now always later than unix epoch; qed")
-		.as_secs()
-		.into()
+		.as_millis() as u64
 }
 
 struct ProposalTiming {
@@ -235,6 +238,7 @@ impl ProposalTiming {
 			x.expect("timer still alive; intervals never end; qed");
 		}
 
+        debug!("checking proposal timing");
 		// wait until the minimum time has passed.
 		if let Some(mut minimum) = self.minimum.take() {
 			if let futures03::Poll::Pending = minimum.poll_unpin(cx) {
@@ -283,6 +287,7 @@ impl<C, TxApi> CreateProposal<C, TxApi> where
             false,
             self.inherent_digests.clone(),
         )?;
+        debug!("created block builder.");
 
 		{
 			let inherents = runtime_api.inherent_extrinsics(&self.parent_id, inherent_data)?;
@@ -294,6 +299,7 @@ impl<C, TxApi> CreateProposal<C, TxApi> where
 			let mut pending_size = 0;
 
 			let ready_iter = self.transaction_pool.ready();
+            debug!("Attempting to push transactions from the pool.");
 			for ready in ready_iter.take(MAX_TRANSACTIONS) {
 				let encoded_size = ready.data.encode().len();
 				if pending_size + encoded_size >= MAX_TRANSACTIONS_SIZE {
@@ -306,7 +312,9 @@ impl<C, TxApi> CreateProposal<C, TxApi> where
 
 				match block_builder.push(ready.data.clone()) {
 					Ok(()) => {
+                        debug!("added tx.");
 						pending_size += encoded_size;
+                        debug!("pending size now {:?}", pending_size);
 					}
 					Err(e) => {
 						trace!(target: "transaction-pool", "Invalid transaction: {}", e);
@@ -315,6 +323,7 @@ impl<C, TxApi> CreateProposal<C, TxApi> where
 				}
 			}
 
+            debug!("remove invalid");
 			self.transaction_pool.remove_invalid(&unqueue_invalid);
 		}
 
@@ -351,6 +360,7 @@ impl<C, TxApi> futures03::Future for CreateProposal<C, TxApi> where
 	fn poll(mut self: Pin<&mut Self>, cx: &mut Context) -> futures03::Poll<Self::Output> {
 		// 1. try to propose if we have enough includable candidates and other
 		// delays have concluded.
+        debug!("Polling now {}", cx);
 		futures03::ready!(self.timing.poll(cx))?;
 
 		futures03::Poll::Ready(self.propose_with())

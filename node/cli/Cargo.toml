@@ -34,7 +34,7 @@ indices = { package = "srml-indices", git = "https://github.com/hicommonwealth/s
 timestamp = { package = "srml-timestamp", git = "https://github.com/hicommonwealth/substrate.git", branch = "develop", default-features = false }
 rand = "0.6"
 finality_tracker = { package = "srml-finality-tracker", git = "https://github.com/hicommonwealth/substrate.git", branch = "develop", default-features = false }
-contracts = { package = "srml-contracts", git = "https://github.com/hicommonwealth/substrate.git", branch = "develop" }
+contracts = { package = "srml-contracts", git = "https://github.com/hicommonwealth/substrate.git", branch = "develop"}
 system = { package = "srml-system", git = "https://github.com/hicommonwealth/substrate.git", branch = "develop" }
 balances = { package = "srml-balances", git = "https://github.com/hicommonwealth/substrate.git", branch = "develop" }
 
