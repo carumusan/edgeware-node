@@ -59,6 +59,7 @@ use codec::Encode;
 use futures_timer::{Delay, Interval};
 use futures03::{future::{self, Either, FutureExt}, task::Context, stream::StreamExt};
 use aura::SlotDuration;
+use client::{BlockBody, BlockchainEvents};
 use client::blockchain::HeaderBackend;
 use client::block_builder::api::BlockBuilder as BlockBuilderApi;
 use edgeware_primitives::{
@@ -67,8 +68,8 @@ use edgeware_primitives::{
 use primitives::{ed25519::{self, Public as AuthorityId}};
 use runtime_primitives::traits::{Block as BlockT, ProvideRuntimeApi, BlakeTwo256, DigestFor};
 use transaction_pool::txpool::{Pool, ChainApi as PoolChainApi};
+use keystore::KeyStorePtr;
 
-use futures::prelude::*;
 use inherents::InherentData;
 use runtime_aura::timestamp::TimestampInherentData;
 
@@ -85,8 +86,31 @@ const MAX_TRANSACTIONS_SIZE: usize = 4 * 1024 * 1024;
 pub struct ProposerFactory<P, TxApi: PoolChainApi> {
     client: Arc<P>,
 	transaction_pool: Arc<Pool<TxApi>>,
-	key: Arc<ed25519::Pair>,
-	aura_slot_duration: SlotDuration,
+	keystore: KeyStorePtr,
+	aura_slot_duration: u64,
+}
+
+impl<P, TxApi> ProposerFactory<P, TxApi> where
+	P: BlockchainEvents<Block> + BlockBody<Block>,
+	P: ProvideRuntimeApi + HeaderBackend<Block> + Send + Sync + 'static,
+	P::Api: BlockBuilderApi<Block>,
+	TxApi: PoolChainApi,
+{
+	/// Create a new proposer factory.
+	pub fn new(
+		client: Arc<P>,
+		transaction_pool: Arc<Pool<TxApi>>,
+		keystore: KeyStorePtr,
+		aura_slot_duration: u64,
+	) -> Self {
+
+		ProposerFactory {
+            client: client.clone(),
+			transaction_pool,
+			keystore,
+			aura_slot_duration,
+		}
+	}
 }
 
 impl<P, TxApi> consensus::Environment<Block> for 
@@ -107,7 +131,6 @@ where
 	) -> Result<Self::Proposer, Error> {
 		let parent_hash = parent_header.hash();
 		let parent_id = BlockId::hash(parent_hash);
-		let sign_with = self.key.clone();
 
 		Ok(Proposer {
 			client: self.client.clone(),
@@ -129,7 +152,7 @@ pub struct Proposer<C: Send + Sync, TxApi: PoolChainApi> where
 	parent_id: BlockId,
 	parent_number: BlockNumber,
 	transaction_pool: Arc<Pool<TxApi>>,
-	slot_duration: SlotDuration,
+	slot_duration: u64,
 }
 
 impl<C, TxApi> consensus::Proposer<Block> for Proposer<C, TxApi> where
@@ -146,8 +169,6 @@ impl<C, TxApi> consensus::Proposer<Block> for Proposer<C, TxApi> where
         max_duration: Duration,
     ) -> Self::Create {
 		const ATTEMPT_PROPOSE_EVERY: Duration = Duration::from_millis(100);
-
-		let now = Instant::now();
 
 		let believed_timestamp = match inherent_data.timestamp_inherent_data() {
 			Ok(timestamp) => timestamp,
@@ -186,7 +207,7 @@ impl<C, TxApi> consensus::Proposer<Block> for Proposer<C, TxApi> where
 			inherent_data: Some(inherent_data),
             inherent_digests,
 			// leave some time for the proposal finalisation
-			deadline: Instant::now() + max_duration - max_duration / 3,
+			deadline,
 		})
 	}
 }
@@ -246,7 +267,7 @@ impl<C, TxApi> CreateProposal<C, TxApi> where
 {
 	fn propose_with(&mut self) -> Result<Block, Error> {
 		use client::block_builder::BlockBuilder;
-        use runtime_primitives::traits::{Hash as HashT, BlakeTwo256};
+        use runtime_primitives::traits::{Hash as HashT};
 
 		const MAX_TRANSACTIONS: usize = 40;
 

@@ -16,7 +16,6 @@
 
 //! Errors that can occur during the consensus process.
 
-use primitives::ed25519::Public as AuthorityId;
 use runtime_primitives::RuntimeString;
 
 #[derive(Debug, derive_more::Display, derive_more::From)]

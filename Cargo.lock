@@ -967,6 +967,7 @@ dependencies = [
  "substrate-consensus-common 2.0.0 (git+https://github.com/hicommonwealth/substrate.git?branch=develop)",
  "substrate-finality-grandpa 2.0.0 (git+https://github.com/hicommonwealth/substrate.git?branch=develop)",
  "substrate-inherents 2.0.0 (git+https://github.com/hicommonwealth/substrate.git?branch=develop)",
+ "substrate-keystore 2.0.0 (git+https://github.com/hicommonwealth/substrate.git?branch=develop)",
  "substrate-primitives 2.0.0 (git+https://github.com/hicommonwealth/substrate.git?branch=develop)",
  "substrate-transaction-pool 2.0.0 (git+https://github.com/hicommonwealth/substrate.git?branch=develop)",
 ]

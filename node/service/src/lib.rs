@@ -130,11 +130,10 @@ macro_rules! new_full {
 
 		if is_authority {
 			let proposer = edgeware_validation::ProposerFactory::new(
-				client.clone(),
+				service.client(),
 				service.transaction_pool(),
-				key.clone(),
-				extrinsic_store,
-				SlotDuration::get_or_compute(&*client)?,
+				service.keystore(),
+				edgeware_runtime::constants::time::SLOT_DURATION,
 			);
 
 			let client = service.client();
@@ -146,7 +145,7 @@ macro_rules! new_full {
 				client.clone(),
 				select_chain, // @TODO -> an extra field???
 				block_import,
-				Arc::new(proposer_factory),
+				proposer,
 				service.network(),
 				inherent_data_providers.clone(),
 				force_authoring,

@@ -26,3 +26,4 @@ srml-aura = { git = "https://github.com/hicommonwealth/substrate", branch = "dev
 srml-support = { git = "https://github.com/hicommonwealth/substrate", branch = "develop" }
 substrate-client = { git = "https://github.com/hicommonwealth/substrate", branch = "develop" }
 sr-primitives = { git = "https://github.com/hicommonwealth/substrate", branch = "develop" }
+keystore = { package = "substrate-keystore", git = "https://github.com/hicommonwealth/substrate", branch = "develop" }
