@@ -131,10 +131,7 @@ macro_rules! new_full {
 		if is_authority {
 			let proposer = edgeware_validation::ProposerFactory::new(
 				client.clone(),
-				consensus_network.clone(),
-				consensus_network, // @TODO... I guess this is needed...
 				service.transaction_pool(),
-				executor.clone(),
 				key.clone(),
 				extrinsic_store,
 				SlotDuration::get_or_compute(&*client)?,

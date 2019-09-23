@@ -29,7 +29,6 @@
 //!
 //! Groups themselves may be compromised by malicious authorities.
 
-extern crate parking_lot;
 extern crate edgeware_runtime;
 extern crate edgeware_primitives;
 
@@ -41,19 +40,11 @@ extern crate sr_primitives as runtime_primitives;
 extern crate substrate_client as client;
 
 extern crate exit_future;
-extern crate tokio;
 extern crate substrate_consensus_common as consensus;
 extern crate substrate_consensus_aura as aura;
 extern crate substrate_consensus_aura_primitives as aura_primitives;
 extern crate substrate_finality_grandpa as grandpa;
 extern crate substrate_transaction_pool as transaction_pool;
-extern crate substrate_consensus_authorities as consensus_authorities;
-
-#[macro_use]
-extern crate error_chain;
-
-#[macro_use]
-extern crate futures;
 
 #[macro_use]
 extern crate log;
@@ -61,35 +52,27 @@ extern crate log;
 #[cfg(test)]
 extern crate substrate_keyring;
 
-use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
+use std::pin::Pin;
 use std::time::{self, Duration, Instant};
-
+use codec::Encode;
+use futures_timer::{Delay, Interval};
+use futures03::{future::{self, Either, FutureExt}, task::Context, stream::StreamExt};
 use aura::SlotDuration;
-use client::{BlockchainEvents, ChainHead, BlockBody};
 use client::blockchain::HeaderBackend;
 use client::block_builder::api::BlockBuilder as BlockBuilderApi;
-use client::runtime_api::Core;
-use extrinsic_store::Store as ExtrinsicStore;
-use parking_lot::Mutex;
-use polkadot_primitives::{
-	Hash, Block, BlockId, BlockNumber, Header, SessionKey
+use edgeware_primitives::{
+	Hash, BlockId, BlockNumber, Block
 };
-use polkadot_primitives::parachain::{Id as ParaId, Chain, DutyRoster, BlockData, Extrinsic as ParachainExtrinsic, CandidateReceipt, CollatorSignature};
-use polkadot_primitives::parachain::{AttestedCandidate, Statement as PrimitiveStatement};
-use primitives::{Pair, ed25519::{self, Public as AuthorityId}};
-use runtime_primitives::traits::ProvideRuntimeApi;
-use tokio::runtime::TaskExecutor;
-use tokio::timer::{Delay, Interval};
+use primitives::{ed25519::{self, Public as AuthorityId}};
+use runtime_primitives::traits::{Block as BlockT, ProvideRuntimeApi, BlakeTwo256, DigestFor};
 use transaction_pool::txpool::{Pool, ChainApi as PoolChainApi};
 
 use futures::prelude::*;
-use futures::future::{self, Either};
 use inherents::InherentData;
 use runtime_aura::timestamp::TimestampInherentData;
-use consensus_authorities::AuthoritiesApi;
 
-pub use self::error::{ErrorKind, Error};
+pub use self::error::{Error};
 
 mod evaluation;
 mod error;
@@ -98,51 +81,29 @@ mod error;
 // block size limit.
 const MAX_TRANSACTIONS_SIZE: usize = 4 * 1024 * 1024;
 
-/// Polkadot proposer factory.
-pub struct ProposerFactory<C, N, P, TxApi: PoolChainApi> {
+/// Edgeware proposer factory.
+pub struct ProposerFactory<P, TxApi: PoolChainApi> {
+    client: Arc<P>,
 	transaction_pool: Arc<Pool<TxApi>>,
 	key: Arc<ed25519::Pair>,
 	aura_slot_duration: SlotDuration,
 }
 
-impl<C, N, P, TxApi> ProposerFactory<C, N, P, TxApi> where
-	<C::Collation as IntoFuture>::Future: Send + 'static,
-	P: BlockchainEvents<Block> + ChainHead<Block> + BlockBody<Block>,
-	P: ProvideRuntimeApi + HeaderBackend<Block> + Send + Sync + 'static,
-	P::Api: Core<Block> + BlockBuilderApi<Block> + AuthoritiesApi<Block>,
-	TxApi: PoolChainApi,
-{
-	/// Create a new proposer factory.
-	pub fn new(
-		client: Arc<P>,
-		transaction_pool: Arc<Pool<TxApi>>,
-		key: Arc<ed25519::Pair>,
-		aura_slot_duration: SlotDuration,
-	) -> Self {
-
-		ProposerFactory {
-			transaction_pool,
-			key,
-			aura_slot_duration,
-		}
-	}
-}
-
-impl<C, N, P, TxApi> consensus::Environment<Block> for ProposerFactory<C, N, P, TxApi> where
-	C: Collators + Send + 'static,
-	TxApi: PoolChainApi<Block=Block>,
+impl<P, TxApi> consensus::Environment<Block> for 
+ProposerFactory<P, TxApi> 
+where
+    Block: BlockT,
 	P: ProvideRuntimeApi + HeaderBackend<Block> + Send + Sync + 'static,
 	P::Api: BlockBuilderApi<Block>,
-	<C::Collation as IntoFuture>::Future: Send + 'static,
-	N::TableRouter: Send + 'static,
+    Block: BlockT,
+    TxApi: PoolChainApi<Block=Block>,
 {
 	type Proposer = Proposer<P, TxApi>;
 	type Error = Error;
 
 	fn init(
-		&self,
-		parent_header: &Header,
-		authorities: &[AuthorityId],
+		&mut self,
+        parent_header: &<Block as BlockT>::Header,
 	) -> Result<Self::Proposer, Error> {
 		let parent_hash = parent_header.hash();
 		let parent_id = BlockId::hash(parent_hash);
@@ -159,12 +120,12 @@ impl<C, N, P, TxApi> consensus::Environment<Block> for ProposerFactory<C, N, P, 
 	}
 }
 
-/// The Polkadot proposer logic.
+/// The Edgeware proposer logic.
 pub struct Proposer<C: Send + Sync, TxApi: PoolChainApi> where
 	C: ProvideRuntimeApi + HeaderBackend<Block>,
 {
 	client: Arc<C>,
-	parent_hash: Hash,
+	parent_hash: <Block as BlockT>::Hash,
 	parent_id: BlockId,
 	parent_number: BlockNumber,
 	transaction_pool: Arc<Pool<TxApi>>,
@@ -177,20 +138,20 @@ impl<C, TxApi> consensus::Proposer<Block> for Proposer<C, TxApi> where
 	C::Api: BlockBuilderApi<Block>,
 {
 	type Error = Error;
-	type Create = Either<
-		CreateProposal<C, TxApi>,
-		future::FutureResult<Block, Error>,
-	>;
+	type Create = Either<CreateProposal<C, TxApi>, future::Ready<Result<Block, Error>>>;
 
-	fn propose(&self, inherent_data: InherentData, max_duration: Duration) -> Self::Create {
+	fn propose(&mut self, 
+        inherent_data: InherentData, 		
+        inherent_digests: DigestFor<Block>,
+        max_duration: Duration,
+    ) -> Self::Create {
 		const ATTEMPT_PROPOSE_EVERY: Duration = Duration::from_millis(100);
-		const SLOT_DURATION_DENOMINATOR: u64 = 3; // wait up to 1/3 of the slot for candidates.
 
 		let now = Instant::now();
 
 		let believed_timestamp = match inherent_data.timestamp_inherent_data() {
 			Ok(timestamp) => timestamp,
-			Err(e) => return Either::B(future::err(ErrorKind::InherentError(e).into())),
+            Err(e) => return Either::Right(future::err(Error::InherentError(e))),
 		};
 
 		// set up delay until next allowed timestamp.
@@ -198,25 +159,32 @@ impl<C, TxApi> consensus::Proposer<Block> for Proposer<C, TxApi> where
 		let delay_future = if current_timestamp >= believed_timestamp {
 			None
 		} else {
-			Some(Delay::new(
-				Instant::now() + Duration::from_secs(current_timestamp - believed_timestamp)
-			))
+			Some(Delay::new(Duration::from_millis (current_timestamp - believed_timestamp)))
 		};
 
 		let timing = ProposalTiming {
 			minimum: delay_future,
-			attempt_propose: Interval::new(now + ATTEMPT_PROPOSE_EVERY, ATTEMPT_PROPOSE_EVERY),
+			attempt_propose: Interval::new(ATTEMPT_PROPOSE_EVERY),
 		};
 
-		Either::A(CreateProposal {
+        let deadline_diff = max_duration - max_duration / 3;
+		let deadline = match Instant::now().checked_add(deadline_diff) {
+			None => return Either::Right(
+				future::err(Error::DeadlineComputeFailure(deadline_diff)),
+			),
+			Some(d) => d,
+		};
+        
+		Either::Left(CreateProposal {
 			parent_hash: self.parent_hash.clone(),
 			parent_number: self.parent_number.clone(),
 			parent_id: self.parent_id.clone(),
 			client: self.client.clone(),
 			transaction_pool: self.transaction_pool.clone(),
+            timing,
 			believed_minimum_timestamp: believed_timestamp,
-			timing,
 			inherent_data: Some(inherent_data),
+            inherent_digests,
 			// leave some time for the proposal finalisation
 			deadline: Instant::now() + max_duration - max_duration / 3,
 		})
@@ -233,39 +201,27 @@ fn current_timestamp() -> u64 {
 struct ProposalTiming {
 	minimum: Option<Delay>,
 	attempt_propose: Interval,
-	last_included: usize,
 }
 
 impl ProposalTiming {
 	// whether it's time to attempt a proposal.
 	// shouldn't be called outside of the context of a task.
-	fn poll(&mut self, included: usize) -> Poll<(), ErrorKind> {
+	fn poll(&mut self, cx: &mut Context) -> futures03::Poll<Result<(), Error>> {
 		// first drain from the interval so when the minimum delay is up
 		// we don't have any notifications built up.
 		//
+        while let futures03::Poll::Ready(x) = self.attempt_propose.poll_next_unpin(cx) {
+			x.expect("timer still alive; intervals never end; qed");
+		}
 
 		// wait until the minimum time has passed.
 		if let Some(mut minimum) = self.minimum.take() {
-			if let Async::NotReady = minimum.poll().map_err(ErrorKind::Timer)? {
+			if let futures03::Poll::Pending = minimum.poll_unpin(cx) {
 				self.minimum = Some(minimum);
-				return Ok(Async::NotReady);
+				return futures03::Poll::Pending;
 			}
 		}
-
-		if included == self.last_included {
-			return self.enough_candidates.poll().map_err(ErrorKind::Timer);
-		}
-
-		// the amount of includable candidates has changed. schedule a wakeup
-		// if it's not sufficient anymore.
-		match self.dynamic_inclusion.acceptable_in(Instant::now(), included) {
-			Some(instant) => {
-				self.last_included = included;
-				self.enough_candidates.reset(instant);
-				self.enough_candidates.poll().map_err(ErrorKind::Timer)
-			}
-			None => Ok(Async::Ready(())),
-		}
+        return futures03::Poll::Ready(Ok(()));
 	}
 }
 
@@ -276,9 +232,10 @@ pub struct CreateProposal<C: Send + Sync, TxApi: PoolChainApi> {
 	parent_id: BlockId,
 	client: Arc<C>,
 	transaction_pool: Arc<Pool<TxApi>>,
-	timing: ProposalTiming, // @Todo...
+	timing: ProposalTiming,
 	believed_minimum_timestamp: u64,
 	inherent_data: Option<InherentData>,
+    inherent_digests: DigestFor<Block>,
 	deadline: Instant,
 }
 
@@ -287,20 +244,24 @@ impl<C, TxApi> CreateProposal<C, TxApi> where
 	C: ProvideRuntimeApi + HeaderBackend<Block> + Send + Sync,
 	C::Api: BlockBuilderApi<Block>,
 {
-	fn propose_with(&mut self, candidates: Vec<AttestedCandidate>) -> Result<Block, Error> {
+	fn propose_with(&mut self) -> Result<Block, Error> {
 		use client::block_builder::BlockBuilder;
-		use runtime_primitives::traits::{Hash as HashT, BlakeTwo256};
+        use runtime_primitives::traits::{Hash as HashT, BlakeTwo256};
 
 		const MAX_TRANSACTIONS: usize = 40;
 
 		let mut inherent_data = self.inherent_data
 			.take()
 			.expect("CreateProposal is not polled after finishing; qed");
-		inherent_data.put_data(edgeware_runtime::PARACHAIN_INHERENT_IDENTIFIER, &candidates).map_err(ErrorKind::InherentError)?;
 
 		let runtime_api = self.client.runtime_api();
 
-		let mut block_builder = BlockBuilder::at_block(&self.parent_id, &*self.client)?;
+		let mut block_builder = BlockBuilder::at_block(
+            &self.parent_id, 
+            &*self.client,
+            false,
+            self.inherent_digests.clone(),
+        )?;
 
 		{
 			let inherents = runtime_api.inherent_extrinsics(&self.parent_id, inherent_data)?;
@@ -348,28 +309,30 @@ impl<C, TxApi> CreateProposal<C, TxApi> where
 				.join(", ")
 		);
 
+        assert!(evaluation::evaluate_initial(
+			&new_block,
+			self.believed_minimum_timestamp,
+			&self.parent_hash,
+			self.parent_number,
+		).is_ok());
+
 		Ok(new_block)
 	}
 }
 
-impl<C, TxApi> Future for CreateProposal<C, TxApi> where
+impl<C, TxApi> futures03::Future for CreateProposal<C, TxApi> where
 	TxApi: PoolChainApi<Block=Block>,
 	C: ProvideRuntimeApi + HeaderBackend<Block> + Send + Sync,
 	C::Api: BlockBuilderApi<Block>,
 {
-	type Item = Block;
-	type Error = Error;
+	type Output = Result<Block, Error>;
 
-	fn poll(&mut self) -> Poll<Block, Error> {
+	fn poll(mut self: Pin<&mut Self>, cx: &mut Context) -> futures03::Poll<Self::Output> {
 		// 1. try to propose if we have enough includable candidates and other
 		// delays have concluded.
-		let included = self.table.includable_count();
-		try_ready!(self.timing.poll(included));
+		futures03::ready!(self.timing.poll(cx))?;
 
-		// 2. propose
-		let proposed_candidates = self.table.proposed_set();
-
-		self.propose_with(proposed_candidates).map(Async::Ready)
+		futures03::Poll::Ready(self.propose_with())
 	}
 }
 

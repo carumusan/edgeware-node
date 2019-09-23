@@ -6,23 +6,23 @@ edition = "2018"
 
 [dependencies]
 futures = "0.1.17"
-parking_lot = "0.4"
-tokio = "0.1.7"
+futures03 = { package = "futures-preview", version = "0.3.0-alpha.17", features = ["compat"] }
+futures-timer = "0.2.1"
+derive_more = "0.14.0"
 error-chain = "0.12"
 log = "0.3"
 exit-future = "0.1"
-parity-codec = "3.1"
+codec = { package = "parity-scale-codec", version = "~1.0.0", default-features = false, features = ["derive"] }
 edgeware-primitives = { path = "../primitives" }
 edgeware-runtime = { path = "../runtime" }
-substrate-consensus-aura = { git = "https://github.com/paritytech/substrate", branch = "v1.0" }
-substrate-consensus-aura-primitives = { git = "https://github.com/paritytech/substrate", branch = "v1.0" }
-substrate-finality-grandpa = { git = "https://github.com/paritytech/substrate", branch = "v1.0" }
-substrate-inherents = { git = "https://github.com/paritytech/substrate", branch = "v1.0" }
-substrate-consensus-common = { git = "https://github.com/paritytech/substrate", branch = "v1.0" }
-substrate-primitives = { git = "https://github.com/paritytech/substrate", branch = "v1.0" }
-substrate-transaction-pool = { git = "https://github.com/paritytech/substrate", branch = "v1.0" }
-srml-aura = { git = "https://github.com/paritytech/substrate", branch = "v1.0" }
-srml-support = { git = "https://github.com/paritytech/substrate", branch = "v1.0" }
-substrate-client = { git = "https://github.com/paritytech/substrate", branch = "v1.0" }
-sr-primitives = { git = "https://github.com/paritytech/substrate", branch = "v1.0" }
-substrate-consensus-authorities = { git = "https://github.com/paritytech/substrate", branch = "v1.0" }
+substrate-consensus-aura = { git = "https://github.com/hicommonwealth/substrate", branch = "develop" }
+substrate-consensus-aura-primitives = { git = "https://github.com/hicommonwealth/substrate", branch = "develop" }
+substrate-finality-grandpa = { git = "https://github.com/hicommonwealth/substrate", branch = "develop" }
+substrate-inherents = { git = "https://github.com/hicommonwealth/substrate", branch = "develop" }
+substrate-consensus-common = { git = "https://github.com/hicommonwealth/substrate", branch = "develop" }
+substrate-primitives = { git = "https://github.com/hicommonwealth/substrate", branch = "develop" }
+substrate-transaction-pool = { git = "https://github.com/hicommonwealth/substrate", branch = "develop" }
+srml-aura = { git = "https://github.com/hicommonwealth/substrate", branch = "develop" }
+srml-support = { git = "https://github.com/hicommonwealth/substrate", branch = "develop" }
+substrate-client = { git = "https://github.com/hicommonwealth/substrate", branch = "develop" }
+sr-primitives = { git = "https://github.com/hicommonwealth/substrate", branch = "develop" }

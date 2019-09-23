@@ -21,8 +21,10 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
 use runtime_primitives::{
-	generic, traits::{Verify, BlakeTwo256}, OpaqueExtrinsic, AnySignature
+	generic, traits::{Verify, BlakeTwo256}, OpaqueExtrinsic, AnySignature,
 };
+
+pub use runtime_primitives::OpaqueExtrinsic as UncheckedExtrinsic;
 
 /// An index to a block.
 pub type BlockNumber = u32;
@@ -78,9 +80,6 @@ pub type Header = generic::Header<BlockNumber, BlakeTwo256>;
 pub type Block = generic::Block<Header, UncheckedExtrinsic>;
 /// Block ID.
 pub type BlockId = generic::BlockId<Block>;
-
-/// Opaque, encoded, unchecked extrinsic.
-pub type UncheckedExtrinsic = OpaqueExtrinsic;
 
 /// Custom validity errors used in Edgeware while validating transactions.
 #[repr(u8)]
