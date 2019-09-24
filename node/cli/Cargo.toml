@@ -17,7 +17,6 @@ client = { package = "substrate-client", git = "https://github.com/hicommonwealt
 primitives = { package = "substrate-primitives", git = "https://github.com/hicommonwealth/substrate.git", branch = "develop" }
 inherents = { package = "substrate-inherents", git = "https://github.com/hicommonwealth/substrate.git", branch = "develop" }
 hex-literal = "0.2"
-substrate-basic-authorship = { git = "https://github.com/hicommonwealth/substrate.git", branch = "develop" }
 substrate-service = { git = "https://github.com/hicommonwealth/substrate.git", branch = "develop" }
 transaction_pool = { package = "substrate-transaction-pool", git = "https://github.com/hicommonwealth/substrate.git", branch = "develop" }
 network = { package = "substrate-network", git = "https://github.com/hicommonwealth/substrate.git", branch = "develop" }
@@ -39,6 +38,7 @@ contracts = { package = "srml-contracts", git = "https://github.com/hicommonweal
 system = { package = "srml-system", git = "https://github.com/hicommonwealth/substrate.git", branch = "develop" }
 balances = { package = "srml-balances", git = "https://github.com/hicommonwealth/substrate.git", branch = "develop" }
 
+edgeware-validation = { path = "../validation" }
 edgeware-executor = { path = "../executor" }
 edgeware-service = { path = "../service" }
 edgeware-primitives = { path = "../primitives" }

@@ -22,6 +22,7 @@ use aura::{import_queue, start_aura, SlotDuration};
 use client::{self, LongestChain};
 use grandpa::{self, FinalityProofProvider as GrandpaFinalityProofProvider};
 use edgeware_executor;
+use edgeware_validation;
 use edgeware_primitives::{Block};
 use edgeware_runtime::{GenesisConfig, RuntimeApi};
 use substrate_service::{
@@ -129,10 +130,12 @@ macro_rules! new_full {
 			.expect("Link Half and Block Import are present for Full Services or setup failed before. qed");
 
 		if is_authority {
-			let proposer = substrate_basic_authorship::ProposerFactory {
-				client: service.client(),
-				transaction_pool: service.transaction_pool(),
-			};
+			let proposer = edgeware_validation::ProposerFactory::new(
+				service.client(),
+				service.transaction_pool(),
+				service.keystore(),
+				edgeware_runtime::constants::time::SLOT_DURATION,
+			);
 
 			let client = service.client();
 			let select_chain = service.select_chain()
