@@ -302,8 +302,8 @@ impl<C, TxApi> CreateProposal<C, TxApi> where
             debug!("Attempting to push transactions from the pool.");
 			for ready in ready_iter.take(MAX_TRANSACTIONS) {
                 debug!("current tx being considered... {:?} at {:?} where {:?} is the deadline ", ready, Instant::now(), self.deadline);
-                debug!("ready tx");
 				let encoded_size = ready.data.encode().len();
+				debug!("done encoding at {:?}", Instant::now());
 				if pending_size + encoded_size >= MAX_TRANSACTIONS_SIZE {
 					break
 				}
@@ -316,7 +316,7 @@ impl<C, TxApi> CreateProposal<C, TxApi> where
 					Ok(()) => {
                         debug!("added tx.");
                         debug!("[{:?}] Pushed to the block.", ready.hash);
-						// pending_size += encoded_size;
+						pending_size += encoded_size;
                         debug!("pending size now {:?}", pending_size);
 					}
 					Err(e) => {
