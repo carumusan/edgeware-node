@@ -27,7 +27,7 @@ use edge_treasury_reward::treasury_reward;
 use parity_codec as codec;
 use rstd::prelude::*;
 use support::{
-	construct_runtime, parameter_types, traits::{SplitTwoWays, Currency}
+	construct_runtime, parameter_types, traits::{SplitTwoWays, Currency, Randomness}
 };
 use substrate_primitives::u32_trait::{_1, _2, _3, _4};
 use edgeware_primitives::{
@@ -41,8 +41,8 @@ use client::{
 };
 use runtime_primitives::{ApplyResult, impl_opaque_keys, generic, create_runtime_str, key_types};
 use runtime_primitives::curve::PiecewiseLinear;
-use runtime_primitives::transaction_validity::{InvalidTransaction, TransactionValidity, TransactionValidityError};
-use runtime_primitives::weights::{Weight, DispatchInfo};
+use runtime_primitives::transaction_validity::{TransactionValidity};
+use runtime_primitives::weights::{Weight};
 use runtime_primitives::traits::{
 	self, BlakeTwo256, Block as BlockT, NumberFor, StaticLookup
 };
@@ -72,7 +72,7 @@ use codec::{Encode, Decode};
 /// Implementations of some helper traits passed into runtime modules as associated types.
 pub mod impls;
 use impls::{
-	CurrencyToVoteHandler, WeightMultiplierUpdateHandler, WeightToFee, Author,
+	CurrencyToVoteHandler, WeightToFee, Author,
 };
 
 /// Constant values used within the runtime.
@@ -91,8 +91,8 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
 	// Per convention: if the runtime behavior changes, increment spec_version and set impl_version
 	// to equal spec_version. If only runtime implementation changes and behavior does not, then
 	// leave spec_version as is and increment impl_version.
-	spec_version: 24,
-	impl_version: 24,
+	spec_version: 25,
+	impl_version: 25,
 	apis: RUNTIME_API_VERSIONS,
 };
 
@@ -132,7 +132,6 @@ impl system::Trait for Runtime {
 	type AccountId = AccountId;
 	type Lookup = Indices;
 	type Header = generic::Header<BlockNumber, BlakeTwo256>;
-	type WeightMultiplierUpdate = WeightMultiplierUpdateHandler;
 	type Event = Event;
 	type BlockHashCount = BlockHashCount;
 	type MaximumBlockWeight = MaximumBlockWeight;
@@ -157,8 +156,6 @@ parameter_types! {
 	// Mainnet genesis tx fee
 	pub const TransferFee: Balance = 1 * CENTS;
 	pub const CreationFee: Balance = 1 * CENTS;
-	pub const TransactionBaseFee: Balance = 1 * CENTS;
-	pub const TransactionByteFee: Balance = 10 * MILLICENTS;
 }
 
 impl balances::Trait for Runtime {
@@ -166,15 +163,25 @@ impl balances::Trait for Runtime {
 	type OnFreeBalanceZero = ((Staking, Contracts), Session);
 	type OnNewAccount = Indices;
 	type Event = Event;
-	type TransactionPayment = DealWithFees;
 	type DustRemoval = ();
 	type TransferPayment = ();
 	type ExistentialDeposit = ExistentialDeposit;
 	type TransferFee = TransferFee;
 	type CreationFee = CreationFee;
-	type TransactionBaseFee = TransactionBaseFee;
-	type TransactionByteFee = TransactionByteFee;
-	type WeightToFee = WeightToFee;
+}
+
+parameter_types! {
+       pub const TransactionBaseFee: Balance = 0;
+       pub const TransactionByteFee: Balance = 1;
+}
+
+impl transaction_payment::Trait for Runtime {
+       type Currency = balances::Module<Runtime>;
+       type OnTransactionPayment = ();
+       type TransactionBaseFee = TransactionBaseFee;
+       type TransactionByteFee = TransactionByteFee;
+       type WeightToFee = WeightToFee;
+       type FeeMultiplierUpdate = ();
 }
 
 parameter_types! {
@@ -398,6 +405,8 @@ impl contracts::Trait for Runtime {
 	type MaxDepth = contracts::DefaultMaxDepth;
 	type MaxValueSize = contracts::DefaultMaxValueSize;
 	type BlockGasLimit = contracts::DefaultBlockGasLimit;
+	type Randomness = RandomnessCollectiveFlip;
+	type Time = Timestamp;
 }
 
 impl sudo::Trait for Runtime {
@@ -421,7 +430,9 @@ impl offences::Trait for Runtime {
 	type OnOffenceHandler = Staking;
 }
 
-impl authority_discovery::Trait for Runtime {}
+impl authority_discovery::Trait for Runtime {
+	type AuthorityId = ImOnlineId;
+}
 
 impl grandpa::Trait for Runtime {
 	type Event = Event;
@@ -474,7 +485,7 @@ impl system::offchain::CreateTransaction<Runtime, UncheckedExtrinsic> for Runtim
 			system::CheckEra::<Runtime>::from(generic::Era::mortal(period, current_block as u64)),
 			system::CheckNonce::<Runtime>::from(index),
 			system::CheckWeight::<Runtime>::new(),
-			balances::TakeFees::<Runtime>::from(tip),
+			transaction_payment::ChargeTransactionPayment::<Runtime>::from(tip),
 			Default::default(),
 		);
 		let raw_payload = SignedPayload::new(call, extra).ok()?;
@@ -497,6 +508,7 @@ construct_runtime!(
 		Authorship: authorship::{Module, Call, Storage, Inherent},
 		Indices: indices,
 		Balances: balances::{default, Error},
+		TransactionPayment: transaction_payment::{Module, Storage},
 		Staking: staking::{default, OfflineWorker},
 		Session: session::{Module, Call, Storage, Event, Config<T>},
 		Democracy: democracy::{Module, Call, Storage, Config, Event<T>},
@@ -512,6 +524,7 @@ construct_runtime!(
 		AuthorityDiscovery: authority_discovery::{Module, Call, Config<T>},
 		Identity: identity::{Module, Call, Storage, Config<T>, Event<T>},
 		Voting: voting::{Module, Call, Storage, Event<T>},
+                RandomnessCollectiveFlip: randomness_collective_flip::{Module, Call, Storage},
 		Signaling: signaling::{Module, Call, Storage, Config<T>, Event<T>},
 		TreasuryReward: treasury_reward::{Module, Call, Storage, Config<T>, Event<T>},
 	}
@@ -534,7 +547,7 @@ pub type SignedExtra = (
 	system::CheckEra<Runtime>,
 	system::CheckNonce<Runtime>,
 	system::CheckWeight<Runtime>,
-	balances::TakeFees<Runtime>,
+	transaction_payment::ChargeTransactionPayment<Runtime>,
 	contracts::CheckBlockGasLimit<Runtime>,
 );
 /// Unchecked extrinsic type as expected by this runtime.
@@ -585,7 +598,7 @@ impl_runtime_apis! {
 		}
 
 		fn random_seed() -> <Block as BlockT>::Hash {
-			System::random_seed()
+                       RandomnessCollectiveFlip::random_seed()
 		}
 	}
 

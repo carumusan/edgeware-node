@@ -237,7 +237,7 @@ mod tests {
 	}
 
 	impl ExtBuilder {
-		fn build(self) -> sr_io::TestExternalities<substrate_primitives::Blake2Hasher> {
+		fn build(self) -> sr_io::TestExternalities {
 			let balance_factor = if self.existential_deposit > 0 {
 				256
 			} else {

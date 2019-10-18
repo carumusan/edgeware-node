@@ -16,7 +16,7 @@ sr-io = { git = "https://github.com/hicommonwealth/substrate.git", branch = "tes
 client = { package = "substrate-client", git = "https://github.com/hicommonwealth/substrate.git", branch = "testnet-v0.9.3" }
 primitives = { package = "substrate-primitives", git = "https://github.com/hicommonwealth/substrate.git", branch = "testnet-v0.9.3" }
 inherents = { package = "substrate-inherents", git = "https://github.com/hicommonwealth/substrate.git", branch = "testnet-v0.9.3" }
-hex-literal = "0.2"
+hex-literal = "0.2.1"
 substrate-basic-authorship = { git = "https://github.com/hicommonwealth/substrate.git", branch = "testnet-v0.9.3" }
 substrate-service = { git = "https://github.com/hicommonwealth/substrate.git", branch = "testnet-v0.9.3" }
 transaction_pool = { package = "substrate-transaction-pool", git = "https://github.com/hicommonwealth/substrate.git", branch = "testnet-v0.9.3" }
@@ -28,16 +28,17 @@ grandpa_primitives = { package = "substrate-finality-grandpa-primitives", git = 
 sr-primitives = { git = "https://github.com/hicommonwealth/substrate.git", branch = "testnet-v0.9.3" }
 substrate-keystore = { git = "https://github.com/hicommonwealth/substrate.git", branch = "testnet-v0.9.3" }
 substrate-telemetry = { package = "substrate-telemetry", git = "https://github.com/hicommonwealth/substrate.git", branch = "testnet-v0.9.3" }
-structopt = "0.2"
+structopt = "0.3.3"
 transaction-factory = { git = "https://github.com/hicommonwealth/substrate.git", branch = "testnet-v0.9.3" }
 keyring = { package = "substrate-keyring", git = "https://github.com/hicommonwealth/substrate.git", branch = "testnet-v0.9.3" }
 indices = { package = "srml-indices", git = "https://github.com/hicommonwealth/substrate.git", branch = "testnet-v0.9.3" }
 timestamp = { package = "srml-timestamp", git = "https://github.com/hicommonwealth/substrate.git", branch = "testnet-v0.9.3", default-features = false }
-rand = "0.6"
+rand = "0.7.2"
 finality_tracker = { package = "srml-finality-tracker", git = "https://github.com/hicommonwealth/substrate.git", branch = "testnet-v0.9.3", default-features = false }
 contracts = { package = "srml-contracts", git = "https://github.com/hicommonwealth/substrate.git", branch = "testnet-v0.9.3" }
 system = { package = "srml-system", git = "https://github.com/hicommonwealth/substrate.git", branch = "testnet-v0.9.3" }
 balances = { package = "srml-balances", git = "https://github.com/hicommonwealth/substrate.git", branch = "testnet-v0.9.3" }
+transaction-payment = { package = "srml-transaction-payment", git = "https://github.com/hicommonwealth/substrate.git", branch = "testnet-v0.9.3", default_features = false }
 
 edgeware-executor = { path = "../executor" }
 edgeware-service = { path = "../service" }
@@ -45,4 +46,4 @@ edgeware-primitives = { path = "../primitives" }
 edgeware-rpc = { path = "../rpc" }
 edgeware-runtime = { path = "../runtime" }
 [build-dependencies]
-structopt = "0.2"
+structopt = "0.3.3"

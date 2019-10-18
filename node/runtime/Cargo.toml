@@ -15,6 +15,7 @@ rstd = { package = "sr-std", git = "https://github.com/hicommonwealth/substrate.
 runtime_primitives = { package = "sr-primitives", git = "https://github.com/hicommonwealth/substrate.git", branch = "testnet-v0.9.3", default-features = false }
 offchain-primitives = { package = "substrate-offchain-primitives", git = "https://github.com/hicommonwealth/substrate.git", branch = "testnet-v0.9.3", default-features = false }
 authority-discovery-primitives = { package = "substrate-authority-discovery-primitives", git = "https://github.com/hicommonwealth/substrate.git", branch = "testnet-v0.9.3", default-features = false }
+randomness-collective-flip = { package = "srml-randomness-collective-flip", git = "https://github.com/hicommonwealth/substrate.git", branch = "testnet-v0.9.3", default_features = false }
 sr-staking-primitives = { git = "https://github.com/hicommonwealth/substrate.git", branch = "testnet-v0.9.3", default-features = false }
 version = { package = "sr-version", git = "https://github.com/hicommonwealth/substrate.git", branch = "testnet-v0.9.3", default-features = false }
 support = { package = "srml-support", git = "https://github.com/hicommonwealth/substrate.git", branch = "testnet-v0.9.3", default-features = false }
@@ -32,9 +33,10 @@ grandpa = { package = "srml-grandpa", git = "https://github.com/hicommonwealth/s
 indices = { package = "srml-indices", git = "https://github.com/hicommonwealth/substrate.git", branch = "testnet-v0.9.3", default-features = false }
 session = { package = "srml-session", git = "https://github.com/hicommonwealth/substrate.git", branch = "testnet-v0.9.3", default-features = false, features = ["historical"] }
 staking = { package = "srml-staking", git = "https://github.com/hicommonwealth/substrate.git", branch = "testnet-v0.9.3", default-features = false }
-srml-staking-reward-curve = { package = "srml-staking-reward-curve", git = "https://github.com/hicommonwealth/substrate.git", branch = "testnet-v0.9.0", default-features = false }
+srml-staking-reward-curve = { package = "srml-staking-reward-curve", git = "https://github.com/hicommonwealth/substrate.git", branch = "testnet-v0.9.3", default-features = false }
 system = { package = "srml-system", git = "https://github.com/hicommonwealth/substrate.git", branch = "testnet-v0.9.3", default-features = false }
 timestamp = { package = "srml-timestamp", git = "https://github.com/hicommonwealth/substrate.git", branch = "testnet-v0.9.3", default-features = false }
+transaction-payment = { package = "srml-transaction-payment", git = "https://github.com/hicommonwealth/substrate.git", branch = "testnet-v0.9.3", default_features = false }
 treasury = { package = "srml-treasury", git = "https://github.com/hicommonwealth/substrate.git", branch = "testnet-v0.9.3", default-features = false }
 sudo = { package = "srml-sudo", git = "https://github.com/hicommonwealth/substrate.git", branch = "testnet-v0.9.3", default-features = false }
 authority-discovery = { package = "srml-authority-discovery", git = "https://github.com/hicommonwealth/substrate.git", branch = "testnet-v0.9.3", default-features = false }

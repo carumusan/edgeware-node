@@ -59,7 +59,7 @@ macro_rules! new_full_start {
 				Ok(client::LongestChain::new(backend.clone()))
 			})?
 			.with_transaction_pool(|config, client|
-				Ok(transaction_pool::txpool::Pool::new(config, transaction_pool::ChainApi::new(client)))
+				Ok(transaction_pool::txpool::Pool::new(config, transaction_pool::FullChainApi::new(client)))
 			)?
 			.with_import_queue(|_config, client, mut select_chain, transaction_pool| {
 				let select_chain = select_chain.take()
@@ -157,7 +157,7 @@ macro_rules! new_full {
 		let config = grandpa::Config {
 			// FIXME #1578 make this available through chainspec
 			gossip_duration: std::time::Duration::from_millis(333),
-			justification_period: 4096,
+			justification_period: 512,
 			name: Some(name.clone()),
 			keystore: Some(service.keystore()),
 		};
@@ -213,7 +213,7 @@ pub fn new_light<C: Send + Default + 'static>(config: Configuration<C, GenesisCo
 			Ok(LongestChain::new(backend.clone()))
 		})?
 		.with_transaction_pool(|config, client|
-			Ok(TransactionPool::new(config, transaction_pool::ChainApi::new(client)))
+			Ok(TransactionPool::new(config, transaction_pool::FullChainApi::new(client)))
 		)?
 		.with_import_queue_and_fprb(|_config, client, backend, fetcher, _select_chain, transaction_pool| {
 			let fetch_checker = fetcher

@@ -69,7 +69,7 @@ mod tests {
 			voting<T>, balances<T>, signaling<T>,
 		}
 	}
-	
+
 	#[derive(Clone, PartialEq, Eq, Debug)]
 	pub struct Test;
 
@@ -139,7 +139,7 @@ mod tests {
 	const YES_VOTE: voting::voting::VoteOutcome = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1];
 	const NO_VOTE: voting::voting::VoteOutcome = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0];
 
-	fn new_test_ext() -> sr_io::TestExternalities<Blake2Hasher> {
+	fn new_test_ext() -> sr_io::TestExternalities {
 		let mut t = system::GenesisConfig::default().build_storage::<Test>().unwrap();
 		// We use default for brevity, but you can configure as desired if needed.
 		t.0.extend(
@@ -219,7 +219,7 @@ mod tests {
 
 	#[test]
 	fn propose_should_work() {
-		with_externalities(&mut new_test_ext(), || {
+		new_test_ext.execute_with(|| {
 			System::set_block_number(1);
 			let public = get_test_key();
 			let (title, proposal) = generate_proposal();
@@ -292,7 +292,7 @@ mod tests {
 
 	#[test]
 	fn propose_duplicate_should_fail() {
-		with_externalities(&mut new_test_ext(), || {
+		new_test_ext.execute_with(|| {
 			System::set_block_number(1);
 			let public = get_test_key();
 			let (title, proposal) = generate_proposal();
@@ -314,7 +314,7 @@ mod tests {
 
 	#[test]
 	fn propose_empty_should_fail() {
-		with_externalities(&mut new_test_ext(), || {
+		new_test_ext.execute_with(|| {
 			System::set_block_number(1);
 			let public = get_test_key();
 			let (title, _) = generate_proposal();
@@ -330,7 +330,7 @@ mod tests {
 
 	#[test]
 	fn propose_empty_title_should_fail() {
-		with_externalities(&mut new_test_ext(), || {
+		new_test_ext.execute_with(|| {
 			System::set_block_number(1);
 			let public = get_test_key();
 			let (_, proposal) = generate_proposal();
@@ -346,7 +346,7 @@ mod tests {
 
 	#[test]
 	fn advance_proposal_should_work() {
-		with_externalities(&mut new_test_ext(), || {
+		new_test_ext.execute_with(|| {
 			System::set_block_number(1);
 			let public = get_test_key();
 			let (title, proposal) = generate_proposal();
@@ -397,7 +397,7 @@ mod tests {
 
 	#[test]
 	fn advance_proposal_if_voting_should_fail() {
-		with_externalities(&mut new_test_ext(), || {
+		new_test_ext.execute_with(|| {
 			System::set_block_number(1);
 			let public = get_test_key();
 			let (title, proposal) = generate_proposal();
@@ -421,7 +421,7 @@ mod tests {
 
 	#[test]
 	fn voting_proposal_should_advance() {
-		with_externalities(&mut new_test_ext(), || {
+		new_test_ext.execute_with(|| {
 			System::set_block_number(1);
 			let public = get_test_key();
 			let (title, proposal) = generate_proposal();
@@ -524,7 +524,7 @@ mod tests {
 
 	#[test]
 	fn advance_proposal_if_completed_should_fail() {
-		with_externalities(&mut new_test_ext(), || {
+		new_test_ext.execute_with(|| {
 			System::set_block_number(1);
 			let public = get_test_key();
 			let (title, proposal) = generate_proposal();
@@ -551,7 +551,7 @@ mod tests {
 
 	#[test]
 	fn non_author_advance_should_fail() {
-		with_externalities(&mut new_test_ext(), || {
+		new_test_ext.execute_with(|| {
 			System::set_block_number(1);
 			let public = get_test_key();
 			let (title, proposal) = generate_proposal();
@@ -574,7 +574,7 @@ mod tests {
 
 	#[test]
 	fn creating_proposal_with_insufficient_balance_fails() {
-		with_externalities(&mut new_test_ext(), || {
+		new_test_ext.execute_with(|| {
 			System::set_block_number(1);
 			let public = 100_u64;
 			let (title, proposal) = generate_proposal();
@@ -588,7 +588,7 @@ mod tests {
 
 	#[test]
 	fn completed_proposal_should_return_creation_bond() {
-		with_externalities(&mut new_test_ext(), || {
+		new_test_ext.execute_with(|| {
 			System::set_block_number(1);
 			let public = get_test_key();
 			let (title, proposal) = generate_proposal();
@@ -611,7 +611,7 @@ mod tests {
 
 	#[test]
 	fn expired_inactive_proposal_should_return_creation_bond() {
-		with_externalities(&mut new_test_ext(), || {
+		new_test_ext.execute_with(|| {
 			System::set_block_number(1);
 			let public = get_test_key();
 			let (title, proposal) = generate_proposal();
@@ -636,7 +636,7 @@ mod tests {
 
 	#[test]
 	fn completed_proposal_should_remain_before_deletion() {
-		with_externalities(&mut new_test_ext(), || {
+		new_test_ext.execute_with(|| {
 			System::set_block_number(1);
 			let public = get_test_key();
 			let (title, proposal) = generate_proposal();

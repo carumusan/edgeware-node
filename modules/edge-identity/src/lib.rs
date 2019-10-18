@@ -135,7 +135,7 @@ mod tests {
 	const BOND: u64 = 10;
 	// This function basically just builds a genesis storage key/value store according to
 	// our desired mockup.
-	fn new_test_ext() -> sr_io::TestExternalities<Blake2Hasher> {
+	fn new_test_ext() -> sr_io::TestExternalities {
 		let mut t = system::GenesisConfig::default().build_storage::<Test>().unwrap();
 		// We use default for brevity, but you can configure as desired if needed.
 		t.0.extend(
@@ -220,7 +220,7 @@ mod tests {
 
 	#[test]
 	fn register_should_work() {
-		with_externalities(&mut new_test_ext(), || {
+		new_test_ext.execute_with(|| {
 			System::set_block_number(1);
 			let identity_type: &[u8] = b"github";
 			let identity: &[u8] = b"drewstone";
@@ -256,7 +256,7 @@ mod tests {
 
 	#[test]
 	fn register_twice_should_not_work() {
-		with_externalities(&mut new_test_ext(), || {
+		new_test_ext.execute_with(|| {
 			System::set_block_number(1);
 			let identity_type: &[u8] = b"github";
 			let identity: &[u8] = b"drewstone";
@@ -279,7 +279,7 @@ mod tests {
 
 	#[test]
 	fn register_existing_identity_should_not_work() {
-		with_externalities(&mut new_test_ext(), || {
+		new_test_ext.execute_with(|| {
 			System::set_block_number(1);
 			let identity_type: &[u8] = b"github";
 			let identity: &[u8] = b"drewstone";
@@ -303,7 +303,7 @@ mod tests {
 
 	#[test]
 	fn register_same_type_should_not_work() {
-		with_externalities(&mut new_test_ext(), || {
+		new_test_ext.execute_with(|| {
 			System::set_block_number(1);
 			let identity_type: &[u8] = b"github";
 			let identity: &[u8] = b"drewstone";
@@ -328,7 +328,7 @@ mod tests {
 
 	#[test]
 	fn register_and_attest_should_work() {
-		with_externalities(&mut new_test_ext(), || {
+		new_test_ext.execute_with(|| {
 			System::set_block_number(1);
 			let identity_type: &[u8] = b"github";
 			let identity: &[u8] = b"drewstone";
@@ -380,7 +380,7 @@ mod tests {
 
 	#[test]
 	fn register_and_attest_as_one_should_work() {
-		with_externalities(&mut new_test_ext(), || {
+		new_test_ext.execute_with(|| {
 			System::set_block_number(1);
 			let identity_type: &[u8] = b"github";
 			let identity: &[u8] = b"drewstone";
@@ -429,7 +429,7 @@ mod tests {
 
 	#[test]
 	fn attest_without_register_should_not_work() {
-		with_externalities(&mut new_test_ext(), || {
+		new_test_ext.execute_with(|| {
 			System::set_block_number(1);
 			let identity_type: &[u8] = b"github";
 			let identity: &[u8] = b"drewstone";
@@ -449,7 +449,7 @@ mod tests {
 
 	#[test]
 	fn attest_from_different_account_should_not_work() {
-		with_externalities(&mut new_test_ext(), || {
+		new_test_ext.execute_with(|| {
 			System::set_block_number(1);
 
 			let identity_type: &[u8] = b"github";
@@ -475,7 +475,7 @@ mod tests {
 
 	#[test]
 	fn register_attest_and_verify_should_work() {
-		with_externalities(&mut new_test_ext(), || {
+		new_test_ext.execute_with(|| {
 			System::set_block_number(1);
 			let identity_type: &[u8] = b"github";
 			let identity: &[u8] = b"drewstone";
@@ -541,7 +541,7 @@ mod tests {
 
 	#[test]
 	fn deny_many_should_work() {
-		with_externalities(&mut new_test_ext(), || {
+		new_test_ext.execute_with(|| {
 			System::set_block_number(1);
 			let mut id_hashes = vec![];
 			let test_id_type: &[u8] = b"github";
@@ -549,7 +549,7 @@ mod tests {
 			for i in 1..5 {
 				let identity_type: &[u8] = b"github";
 				let identity: Vec<u8> = format!("drewstone {}", i).as_bytes().to_vec();
-				let identity_hash = build_identity_hash(identity_type, &identity);	
+				let identity_hash = build_identity_hash(identity_type, &identity);
 				assert_ok!(register_identity(i as u64, identity_type, &identity));
 				let attestation: &[u8] = b"this_is_a_fake_attestation";
 				assert_ok!(attest_to_identity(i as u64, identity_hash, attestation));
@@ -572,7 +572,7 @@ mod tests {
 
 	#[test]
 	fn attest_after_verify_should_not_work() {
-		with_externalities(&mut new_test_ext(), || {
+		new_test_ext.execute_with(|| {
 			System::set_block_number(1);
 			let identity_type: &[u8] = b"github";
 			let identity: &[u8] = b"drewstone";
@@ -607,7 +607,7 @@ mod tests {
 
 	#[test]
 	fn verify_from_nonverifier_should_not_work() {
-		with_externalities(&mut new_test_ext(), || {
+		new_test_ext.execute_with(|| {
 			System::set_block_number(1);
 			let identity_type: &[u8] = b"github";
 			let identity: &[u8] = b"drewstone";
@@ -639,7 +639,7 @@ mod tests {
 
 	#[test]
 	fn verify_from_wrong_index_should_not_work() {
-		with_externalities(&mut new_test_ext(), || {
+		new_test_ext.execute_with(|| {
 			System::set_block_number(1);
 			let identity_type: &[u8] = b"github";
 			let identity: &[u8] = b"drewstone";
@@ -671,7 +671,7 @@ mod tests {
 
 	#[test]
 	fn register_should_expire() {
-		with_externalities(&mut new_test_ext(), || {
+		new_test_ext.execute_with(|| {
 			System::set_block_number(1);
 			let identity_type: &[u8] = b"github";
 			let identity: &[u8] = b"drewstone";
@@ -718,7 +718,7 @@ mod tests {
 
 	#[test]
 	fn add_metadata_should_work() {
-		with_externalities(&mut new_test_ext(), || {
+		new_test_ext.execute_with(|| {
 			System::set_block_number(1);
 			let identity_type: &[u8] = b"github";
 			let identity: &[u8] = b"drewstone";
@@ -757,7 +757,7 @@ mod tests {
 
 	#[test]
 	fn add_metadata_without_register_should_not_work() {
-		with_externalities(&mut new_test_ext(), || {
+		new_test_ext.execute_with(|| {
 			System::set_block_number(1);
 			let identity_type: &[u8] = b"github";
 			let identity: &[u8] = b"drewstone";
@@ -779,7 +779,7 @@ mod tests {
 
 	#[test]
 	fn add_metadata_from_different_account_should_not_work() {
-		with_externalities(&mut new_test_ext(), || {
+		new_test_ext.execute_with(|| {
 			System::set_block_number(1);
 
 			let identity_type: &[u8] = b"github";
@@ -808,7 +808,7 @@ mod tests {
 
 	#[test]
 	fn revoke_verified_should_work() {
-		with_externalities(&mut new_test_ext(), || {
+		new_test_ext.execute_with(|| {
 			System::set_block_number(1);
 			let identity_type: &[u8] = b"github";
 			let identity: &[u8] = b"drewstone";
@@ -842,7 +842,7 @@ mod tests {
 
 	#[test]
 	fn revoke_from_wrong_sender_should_not_work() {
-		with_externalities(&mut new_test_ext(), || {
+		new_test_ext.execute_with(|| {
 			System::set_block_number(1);
 			let identity_type: &[u8] = b"github";
 			let identity: &[u8] = b"drewstone";
@@ -863,7 +863,7 @@ mod tests {
 
 	#[test]
 	fn revoke_at_registered_should_work() {
-		with_externalities(&mut new_test_ext(), || {
+		new_test_ext.execute_with(|| {
 			System::set_block_number(1);
 			let identity_type: &[u8] = b"github";
 			let identity: &[u8] = b"drewstone";
@@ -885,7 +885,7 @@ mod tests {
 
 	#[test]
 	fn revoke_at_attested_should_work() {
-		with_externalities(&mut new_test_ext(), || {
+		new_test_ext.execute_with(|| {
 			System::set_block_number(1);
 			let identity_type: &[u8] = b"github";
 			let identity: &[u8] = b"drewstone";
@@ -914,7 +914,7 @@ mod tests {
 
 	#[test]
 	fn register_should_expire_and_work_again() {
-		with_externalities(&mut new_test_ext(), || {
+		new_test_ext.execute_with(|| {
 			System::set_block_number(1);
 			let identity_type: &[u8] = b"github";
 			let identity: &[u8] = b"drewstone";

@@ -17,12 +17,10 @@
 //! Some configurable implementations as associated type for the substrate runtime.
 
 use edgeware_primitives::Balance;
-use runtime_primitives::weights::{Weight, WeightMultiplier};
-use runtime_primitives::traits::{Convert, Saturating};
-use runtime_primitives::Fixed64;
+use runtime_primitives::weights::{Weight};
+use runtime_primitives::traits::{Convert};
 use support::traits::{OnUnbalanced, Currency};
-use crate::{Balances, Authorship, MaximumBlockWeight, NegativeImbalance};
-use crate::constants::fee::TARGET_BLOCK_FULLNESS;
+use crate::{Balances, Authorship, NegativeImbalance};
 
 pub struct Author;
 impl OnUnbalanced<NegativeImbalance> for Author {
@@ -65,65 +63,5 @@ impl Convert<Weight, Balance> for WeightToFee {
 		// substrate-node a weight of 10_000 (smallest non-zero weight) to be mapped to 10^7 units of
 		// fees, hence:
 		Balance::from(x).saturating_mul(1_000)
-	}
-}
-
-/// A struct that updates the weight multiplier based on the saturation level of the previous block.
-/// This should typically be called once per-block.
-///
-/// This assumes that weight is a numeric value in the u32 range.
-///
-/// Given `TARGET_BLOCK_FULLNESS = 1/2`, a block saturation greater than 1/2 will cause the system
-/// fees to slightly grow and the opposite for block saturations less than 1/2.
-///
-/// Formula:
-///   diff = (target_weight - current_block_weight)
-///   v = 0.00004
-///   next_weight = weight * (1 + (v . diff) + (v . diff)^2 / 2)
-///
-/// https://research.web3.foundation/en/latest/polkadot/Token%20Economics/#relay-chain-transaction-fees
-pub struct WeightMultiplierUpdateHandler;
-
-impl Convert<(Weight, WeightMultiplier), WeightMultiplier> for WeightMultiplierUpdateHandler {
-	fn convert(previous_state: (Weight, WeightMultiplier)) -> WeightMultiplier {
-		let (block_weight, multiplier) = previous_state;
-		let max_weight = MaximumBlockWeight::get();
-		let target_weight = (TARGET_BLOCK_FULLNESS * max_weight) as u128;
-		let block_weight = block_weight as u128;
-
-		// determines if the first_term is positive
-		let positive = block_weight >= target_weight;
-		let diff_abs = block_weight.max(target_weight) - block_weight.min(target_weight);
-		// diff is within u32, safe.
-		let diff = Fixed64::from_rational(diff_abs as i64, max_weight as u64);
-		let diff_squared = diff.saturating_mul(diff);
-
-		// 0.00004 = 4/100_000 = 40_000/10^9
-		let v = Fixed64::from_rational(4, 100_000);
-		// 0.00004^2 = 16/10^10 ~= 2/10^9. Taking the future /2 into account, then it is just 1 parts
-		// from a billionth.
-		let v_squared_2 = Fixed64::from_rational(1, 1_000_000_000);
-
-		let first_term = v.saturating_mul(diff);
-		// It is very unlikely that this will exist (in our poor perbill estimate) but we are giving
-		// it a shot.
-		let second_term = v_squared_2.saturating_mul(diff_squared);
-
-		if positive {
-			// Note: this is merely bounded by how big the multiplier and the inner value can go,
-			// not by any economical reasoning.
-			let excess = first_term.saturating_add(second_term);
-			multiplier.saturating_add(WeightMultiplier::from_fixed(excess))
-		} else {
-			// first_term > second_term
-			let negative = first_term - second_term;
-			multiplier.saturating_sub(WeightMultiplier::from_fixed(negative))
-				// despite the fact that apply_to saturates weight (final fee cannot go below 0)
-				// it is crucially important to stop here and don't further reduce the weight fee
-				// multiplier. While at -1, it means that the network is so un-congested that all
-				// transactions have no weight fee. We stop here and only increase if the network
-				// became more busy.
-				.max(WeightMultiplier::from_rational(-1, 1))
-		}
 	}
 }
