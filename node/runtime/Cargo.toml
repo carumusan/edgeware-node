@@ -15,7 +15,6 @@ rstd = { package = "sr-std", git = "https://github.com/hicommonwealth/substrate.
 runtime_primitives = { package = "sr-primitives", git = "https://github.com/hicommonwealth/substrate.git", branch = "testnet-v0.9.3", default-features = false }
 offchain-primitives = { package = "substrate-offchain-primitives", git = "https://github.com/hicommonwealth/substrate.git", branch = "testnet-v0.9.3", default-features = false }
 authority-discovery-primitives = { package = "substrate-authority-discovery-primitives", git = "https://github.com/hicommonwealth/substrate.git", branch = "testnet-v0.9.3", default-features = false }
-randomness-collective-flip = { package = "srml-randomness-collective-flip", git = "https://github.com/hicommonwealth/substrate.git", branch = "testnet-v0.9.3", default_features = false }
 sr-staking-primitives = { git = "https://github.com/hicommonwealth/substrate.git", branch = "testnet-v0.9.3", default-features = false }
 version = { package = "sr-version", git = "https://github.com/hicommonwealth/substrate.git", branch = "testnet-v0.9.3", default-features = false }
 support = { package = "srml-support", git = "https://github.com/hicommonwealth/substrate.git", branch = "testnet-v0.9.3", default-features = false }
@@ -51,6 +50,7 @@ edge-identity = { path = "../../modules/edge-identity", default-features = false
 edge-voting = { path = "../../modules/edge-voting", default-features = false }
 edge-signaling = { path = "../../modules/edge-signaling", default-features = false }
 edge-treasury-reward = { path = "../../modules/edge-treasury-reward", default-features = false }
+edge-randomness-collective-flip = { path = "../../modules/edge-randomness-collective-flip", default-features = false }
 edgeware-primitives = { path = "../primitives", default-features = false }
 
 [build-dependencies]
@@ -99,5 +99,6 @@ std = [
 	"edge-voting/std",
 	"edge-signaling/std",
 	"edge-treasury-reward/std",
+	"edge-randomness-collective-flip/std",
 	"edgeware-primitives/std",
 ]

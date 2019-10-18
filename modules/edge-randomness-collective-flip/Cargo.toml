@@ -1,0 +1,27 @@
+[package]
+name = "edge-randomness-collective-flip"
+version = "2.0.0"
+authors = ["Parity Technologies <admin@parity.io>"]
+edition = "2018"
+
+[dependencies]
+safe-mix = { version = "1.0", default-features = false }
+codec = { package = "parity-scale-codec", version = "1.0.0", default-features = false, features = ["derive"] }
+sr-primitives = { git = "https://github.com/hicommonwealth/substrate.git", branch = "testnet-v0.9.3", default-features = false }
+srml-support = { git = "https://github.com/hicommonwealth/substrate.git", branch = "testnet-v0.9.3", default-features = false }
+srml-system = { git = "https://github.com/hicommonwealth/substrate.git", branch = "testnet-v0.9.3", default-features = false }
+rstd = { package = "sr-std", git = "https://github.com/hicommonwealth/substrate.git", branch = "testnet-v0.9.3", default-features = false }
+
+[dev-dependencies]
+runtime_io = { package = "sr-io", git = "https://github.com/hicommonwealth/substrate.git", branch = "testnet-v0.9.3" }
+
+[features]
+default = ["std"]
+std = [
+	"safe-mix/std",
+	"srml-system/std",
+	"codec/std",
+	"srml-support/std",
+	"sr-primitives/std",
+	"rstd/std",
+]

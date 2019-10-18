@@ -524,7 +524,7 @@ construct_runtime!(
 		AuthorityDiscovery: authority_discovery::{Module, Call, Config<T>},
 		Identity: identity::{Module, Call, Storage, Config<T>, Event<T>},
 		Voting: voting::{Module, Call, Storage, Event<T>},
-                RandomnessCollectiveFlip: randomness_collective_flip::{Module, Call, Storage},
+                RandomnessCollectiveFlip: edge_randomness_collective_flip::{Module, Call, Storage},
 		Signaling: signaling::{Module, Call, Storage, Config<T>, Event<T>},
 		TreasuryReward: treasury_reward::{Module, Call, Storage, Config<T>, Event<T>},
 	}

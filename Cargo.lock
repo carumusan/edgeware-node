@@ -678,6 +678,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "edge-randomness-collective-flip"
+version = "2.0.0"
+dependencies = [
+ "parity-scale-codec 1.0.6 (registry+https://github.com/rust-lang/crates.io-index)",
+ "safe-mix 1.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "sr-io 2.0.0 (git+https://github.com/hicommonwealth/substrate.git?branch=testnet-v0.9.3)",
+ "sr-primitives 2.0.0 (git+https://github.com/hicommonwealth/substrate.git?branch=testnet-v0.9.3)",
+ "sr-std 2.0.0 (git+https://github.com/hicommonwealth/substrate.git?branch=testnet-v0.9.3)",
+ "srml-support 2.0.0 (git+https://github.com/hicommonwealth/substrate.git?branch=testnet-v0.9.3)",
+ "srml-system 2.0.0 (git+https://github.com/hicommonwealth/substrate.git?branch=testnet-v0.9.3)",
+]
+
+[[package]]
 name = "edge-signaling"
 version = "1.0.0"
 dependencies = [
@@ -763,7 +776,7 @@ dependencies = [
  "jsonrpc-core 13.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "log 0.4.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "parity-scale-codec 1.0.6 (registry+https://github.com/rust-lang/crates.io-index)",
- "rand 0.6.5 (registry+https://github.com/rust-lang/crates.io-index)",
+ "rand 0.7.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "sr-io 2.0.0 (git+https://github.com/hicommonwealth/substrate.git?branch=testnet-v0.9.3)",
  "sr-primitives 2.0.0 (git+https://github.com/hicommonwealth/substrate.git?branch=testnet-v0.9.3)",
  "srml-balances 2.0.0 (git+https://github.com/hicommonwealth/substrate.git?branch=testnet-v0.9.3)",
@@ -772,7 +785,8 @@ dependencies = [
  "srml-indices 2.0.0 (git+https://github.com/hicommonwealth/substrate.git?branch=testnet-v0.9.3)",
  "srml-system 2.0.0 (git+https://github.com/hicommonwealth/substrate.git?branch=testnet-v0.9.3)",
  "srml-timestamp 2.0.0 (git+https://github.com/hicommonwealth/substrate.git?branch=testnet-v0.9.3)",
- "structopt 0.2.18 (registry+https://github.com/rust-lang/crates.io-index)",
+ "srml-transaction-payment 2.0.0 (git+https://github.com/hicommonwealth/substrate.git?branch=testnet-v0.9.3)",
+ "structopt 0.3.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "substrate-basic-authorship 2.0.0 (git+https://github.com/hicommonwealth/substrate.git?branch=testnet-v0.9.3)",
  "substrate-cli 2.0.0 (git+https://github.com/hicommonwealth/substrate.git?branch=testnet-v0.9.3)",
  "substrate-client 2.0.0 (git+https://github.com/hicommonwealth/substrate.git?branch=testnet-v0.9.3)",
@@ -862,6 +876,7 @@ name = "edgeware-runtime"
 version = "1.0.0"
 dependencies = [
  "edge-identity 1.0.0",
+ "edge-randomness-collective-flip 2.0.0",
  "edge-signaling 1.0.0",
  "edge-treasury-reward 1.0.0",
  "edge-voting 1.0.0",
@@ -889,7 +904,6 @@ dependencies = [
  "srml-im-online 0.1.0 (git+https://github.com/hicommonwealth/substrate.git?branch=testnet-v0.9.3)",
  "srml-indices 2.0.0 (git+https://github.com/hicommonwealth/substrate.git?branch=testnet-v0.9.3)",
  "srml-offences 1.0.0 (git+https://github.com/hicommonwealth/substrate.git?branch=testnet-v0.9.3)",
- "srml-randomness-collective-flip 2.0.0 (git+https://github.com/hicommonwealth/substrate.git?branch=testnet-v0.9.3)",
  "srml-session 2.0.0 (git+https://github.com/hicommonwealth/substrate.git?branch=testnet-v0.9.3)",
  "srml-staking 2.0.0 (git+https://github.com/hicommonwealth/substrate.git?branch=testnet-v0.9.3)",
  "srml-staking-reward-curve 2.0.0 (git+https://github.com/hicommonwealth/substrate.git?branch=testnet-v0.9.3)",
@@ -3919,19 +3933,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "srml-randomness-collective-flip"
-version = "2.0.0"
-source = "git+https://github.com/hicommonwealth/substrate.git?branch=testnet-v0.9.3#06b45c45bfd185cc722f1e276ff0376033b9d031"
-dependencies = [
- "parity-scale-codec 1.0.6 (registry+https://github.com/rust-lang/crates.io-index)",
- "safe-mix 1.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "sr-primitives 2.0.0 (git+https://github.com/hicommonwealth/substrate.git?branch=testnet-v0.9.3)",
- "sr-std 2.0.0 (git+https://github.com/hicommonwealth/substrate.git?branch=testnet-v0.9.3)",
- "srml-support 2.0.0 (git+https://github.com/hicommonwealth/substrate.git?branch=testnet-v0.9.3)",
- "srml-system 2.0.0 (git+https://github.com/hicommonwealth/substrate.git?branch=testnet-v0.9.3)",
-]
-
-[[package]]
 name = "srml-session"
 version = "2.0.0"
 source = "git+https://github.com/hicommonwealth/substrate.git?branch=testnet-v0.9.3#06b45c45bfd185cc722f1e276ff0376033b9d031"
@@ -6283,7 +6284,6 @@ dependencies = [
 "checksum srml-indices 2.0.0 (git+https://github.com/hicommonwealth/substrate.git?branch=testnet-v0.9.3)" = "<none>"
 "checksum srml-metadata 2.0.0 (git+https://github.com/hicommonwealth/substrate.git?branch=testnet-v0.9.3)" = "<none>"
 "checksum srml-offences 1.0.0 (git+https://github.com/hicommonwealth/substrate.git?branch=testnet-v0.9.3)" = "<none>"
-"checksum srml-randomness-collective-flip 2.0.0 (git+https://github.com/hicommonwealth/substrate.git?branch=testnet-v0.9.3)" = "<none>"
 "checksum srml-session 2.0.0 (git+https://github.com/hicommonwealth/substrate.git?branch=testnet-v0.9.3)" = "<none>"
 "checksum srml-staking 2.0.0 (git+https://github.com/hicommonwealth/substrate.git?branch=testnet-v0.9.3)" = "<none>"
 "checksum srml-staking-reward-curve 2.0.0 (git+https://github.com/hicommonwealth/substrate.git?branch=testnet-v0.9.3)" = "<none>"
