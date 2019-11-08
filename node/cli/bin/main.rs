@@ -18,7 +18,7 @@
 
 #![warn(missing_docs)]
 
-extern crate edgeware_cli as cli;
+extern crate substrate_cli as cli;
 extern crate ctrlc;
 extern crate futures;
 
@@ -29,7 +29,7 @@ use std::cell::RefCell;
 
 // handles ctrl-c
 struct Exit;
-impl edgeware_cli::IntoExit for Exit {
+impl substrate_cli::IntoExit for Exit {
 	type Exit = future::MapErr<oneshot::Receiver<()>, fn(oneshot::Canceled) -> ()>;
 	fn into_exit(self) -> Self::Exit {
 		// can't use signal directly here because CtrlC takes only `Fn`.

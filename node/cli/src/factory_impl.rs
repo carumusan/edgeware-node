@@ -20,20 +20,25 @@
 
 use rand::{Rng, SeedableRng};
 use rand::rngs::StdRng;
-use parity_codec as codec;
+
 use codec::{Encode, Decode};
 use keyring::sr25519::Keyring;
-use edgeware_runtime::{Call, CheckedExtrinsic, UncheckedExtrinsic, SignedExtra, BalancesCall, ExistentialDeposit};
+use node_runtime::{
+	Call, CheckedExtrinsic, UncheckedExtrinsic, SignedExtra, BalancesCall, ExistentialDeposit,
+	MinimumPeriod
+};
+use node_primitives::Signature;
 use primitives::{sr25519, crypto::Pair};
-use sr_primitives::{generic::Era, traits::{Block as BlockT, Header as HeaderT, SignedExtension}};
+use sr_primitives::{
+	generic::Era, traits::{Block as BlockT, Header as HeaderT, SignedExtension, Verify, IdentifyAccount}
+};
 use transaction_factory::RuntimeAdapter;
 use transaction_factory::modes::Mode;
 use inherents::InherentData;
 use timestamp;
 use finality_tracker;
 
-// TODO get via api: <T as timestamp::Trait>::MinimumPeriod::get(). See #2587.
-const MINIMUM_PERIOD: u64 = 99;
+type AccountPublic = <Signature as Verify>::Signer;
 
 pub struct FactoryState<N> {
 	block_no: N,
@@ -46,29 +51,29 @@ pub struct FactoryState<N> {
 	num: u32,
 }
 
-type Number = <<edgeware_primitives::Block as BlockT>::Header as HeaderT>::Number;
+type Number = <<node_primitives::Block as BlockT>::Header as HeaderT>::Number;
 
 impl<Number> FactoryState<Number> {
-	fn build_extra(index: edgeware_primitives::Index, phase: u64) -> edgeware_runtime::SignedExtra {
+	fn build_extra(index: node_primitives::Index, phase: u64) -> node_runtime::SignedExtra {
 		(
 			system::CheckVersion::new(),
 			system::CheckGenesis::new(),
 			system::CheckEra::from(Era::mortal(256, phase)),
 			system::CheckNonce::from(index),
 			system::CheckWeight::new(),
-			balances::TakeFees::from(0),
+			transaction_payment::ChargeTransactionPayment::from(0),
 			Default::default(),
 		)
 	}
 }
 
 impl RuntimeAdapter for FactoryState<Number> {
-	type AccountId = edgeware_primitives::AccountId;
-	type Balance = edgeware_primitives::Balance;
-	type Block = edgeware_primitives::Block;
+	type AccountId = node_primitives::AccountId;
+	type Balance = node_primitives::Balance;
+	type Block = node_primitives::Block;
 	type Phase = sr_primitives::generic::Phase;
 	type Secret = sr25519::Pair;
-	type Index = edgeware_primitives::Index;
+	type Index = node_primitives::Index;
 
 	type Number = Number;
 
@@ -152,7 +157,7 @@ impl RuntimeAdapter for FactoryState<Number> {
 	}
 
 	fn inherent_extrinsics(&self) -> InherentData {
-		let timestamp = self.block_no as u64 * MINIMUM_PERIOD;
+		let timestamp = (self.block_no as u64 + 1) * MinimumPeriod::get();
 
 		let mut inherent = InherentData::new();
 		inherent.put_data(timestamp::INHERENT_IDENTIFIER, &timestamp)
@@ -163,12 +168,11 @@ impl RuntimeAdapter for FactoryState<Number> {
 	}
 
 	fn minimum_balance() -> Self::Balance {
-		// TODO get correct amount via api. See #2587.
 		ExistentialDeposit::get()
 	}
 
 	fn master_account_id() -> Self::AccountId {
-		Keyring::Alice.pair().public()
+		Keyring::Alice.to_account_id()
 	}
 
 	fn master_account_secret() -> Self::Secret {
@@ -178,7 +182,7 @@ impl RuntimeAdapter for FactoryState<Number> {
 	/// Generates a random `AccountId` from `seed`.
 	fn gen_random_account_id(seed: &Self::Number) -> Self::AccountId {
 		let pair: sr25519::Pair = sr25519::Pair::from_seed(&gen_seed_bytes(*seed));
-		pair.public().into()
+		AccountPublic::from(pair.public()).into_account()
 	}
 
 	/// Generates a random `Secret` from `seed`.
