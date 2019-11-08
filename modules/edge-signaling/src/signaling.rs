@@ -28,7 +28,6 @@ extern crate edge_voting as voting;
 use rstd::prelude::*;
 use srml_support::traits::{Currency, ReservableCurrency};
 use system::ensure_signed;
-use runtime_support::{StorageMap};
 use runtime_support::dispatch::Result;
 use runtime_primitives::traits::{Hash};
 use codec::{Encode, Decode};

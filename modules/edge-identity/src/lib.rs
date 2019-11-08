@@ -50,25 +50,19 @@ mod tests {
 	use codec::Encode;
 	use primitives::{Blake2Hasher, H256, Hasher};
 	use rstd::prelude::*;
-	use runtime_io::with_externalities;
+	
 	use runtime_support::dispatch::Result;
-	use system::{EventRecord, Phase};
+	
 	// The testing primitives are very useful for avoiding having to work with
 	// public keys. `u64` is used as the `AccountId` and no `Signature`s are requried.
 	use runtime_primitives::{
 		Perbill,
 		testing::{Header},
-		traits::{BlakeTwo256, OnFinalize, IdentityLookup},
+		traits::{OnFinalize, IdentityLookup},
 	};
 
 	impl_outer_origin! {
 		pub enum Origin for Test {}
-	}
-
-	impl_outer_event! {
-		pub enum Event for Test {
-			identity<T>, balances<T>,
-		}
 	}
 
 	#[derive(Clone, PartialEq, Eq, Debug)]
@@ -83,16 +77,15 @@ mod tests {
 
 	impl system::Trait for Test {
 		type Origin = Origin;
-		type Call = ();
 		type Index = u64;
 		type BlockNumber = u64;
+		type Call = ();
 		type Hash = H256;
-		type Hashing = BlakeTwo256;
+		type Hashing = ::sr_primitives::traits::BlakeTwo256;
 		type AccountId = u64;
 		type Lookup = IdentityLookup<Self::AccountId>;
 		type Header = Header;
-		type Event = Event;
-		type WeightMultiplierUpdate = ();
+		type Event = ();
 		type BlockHashCount = BlockHashCount;
 		type MaximumBlockWeight = MaximumBlockWeight;
 		type MaximumBlockLength = MaximumBlockLength;
@@ -101,30 +94,29 @@ mod tests {
 	}
 
 	parameter_types! {
-		pub const ExistentialDeposit: u64 = 0;
-		pub const TransferFee: u64 = 0;
-		pub const CreationFee: u64 = 0;
-		pub const TransactionBaseFee: u64 = 0;
-		pub const TransactionByteFee: u64 = 0;
+		pub const ExistentialDeposit: u128 = 0;
+		pub const TransferFee: u128 = 0;
+		pub const CreationFee: u128 = 0;
 	}
+
 	impl balances::Trait for Test {
-		type Balance = u64;
-		type OnNewAccount = ();
+		/// The type for recording an account's balance.
+		type Balance = u128;
+		/// What to do if an account's free balance gets zeroed.
 		type OnFreeBalanceZero = ();
-		type Event = Event;
-		type TransactionPayment = ();
-		type TransferPayment = ();
+		/// What to do if a new account is created.
+		type OnNewAccount = ();
+		/// The ubiquitous event type.
+		type Event = ();
 		type DustRemoval = ();
+		type TransferPayment = ();
 		type ExistentialDeposit = ExistentialDeposit;
 		type TransferFee = TransferFee;
 		type CreationFee = CreationFee;
-		type TransactionBaseFee = TransactionBaseFee;
-		type TransactionByteFee = TransactionByteFee;
-		type WeightToFee = ();
 	}
 
 	impl Trait for Test {
-		type Event = Event;
+		type Event = ();
 		type Currency = balances::Module<Self>;
 	}
 
@@ -132,10 +124,10 @@ mod tests {
 	type System = system::Module<Test>;
 	type Identity = Module<Test>;
 
-	const BOND: u64 = 10;
+	const BOND: u128 = 10;
 	// This function basically just builds a genesis storage key/value store according to
 	// our desired mockup.
-	fn new_test_ext() -> sr_io::TestExternalities<Blake2Hasher> {
+	fn new_test_ext() -> runtime_io::TestExternalities {
 		let mut t = system::GenesisConfig::default().build_storage::<Test>().unwrap();
 		// We use default for brevity, but you can configure as desired if needed.
 		t.0.extend(
@@ -220,7 +212,7 @@ mod tests {
 
 	#[test]
 	fn register_should_work() {
-		with_externalities(&mut new_test_ext(), || {
+		new_test_ext().execute_with(|| {
 			System::set_block_number(1);
 			let identity_type: &[u8] = b"github";
 			let identity: &[u8] = b"drewstone";
@@ -230,21 +222,12 @@ mod tests {
 
 			let expiration_length = Identity::expiration_length();
 			let now = System::block_number();
-			let expires_at = now + expiration_length;
+			let _expires_at = now + expiration_length;
 
 			let balance = Balances::free_balance(public);
 			assert_ok!(register_identity(public, identity_type, identity));
 			let after_register_balance = Balances::free_balance(public);
 			assert_eq!(balance - BOND, after_register_balance);
-
-			assert_eq!(
-				System::events(),
-				vec![EventRecord {
-					phase: Phase::ApplyExtrinsic(0),
-					event: Event::identity(RawEvent::Register(identity_hash, public, expires_at)),
-					topics: vec![],
-				}]
-			);
 			assert_eq!(Identity::identities(), vec![identity_hash]);
 			assert_eq!(Identity::identities_pending(), vec![(identity_hash, 10001)]);
 			assert_eq!(
@@ -256,7 +239,7 @@ mod tests {
 
 	#[test]
 	fn register_twice_should_not_work() {
-		with_externalities(&mut new_test_ext(), || {
+		new_test_ext().execute_with(|| {
 			System::set_block_number(1);
 			let identity_type: &[u8] = b"github";
 			let identity: &[u8] = b"drewstone";
@@ -279,7 +262,7 @@ mod tests {
 
 	#[test]
 	fn register_existing_identity_should_not_work() {
-		with_externalities(&mut new_test_ext(), || {
+		new_test_ext().execute_with(|| {
 			System::set_block_number(1);
 			let identity_type: &[u8] = b"github";
 			let identity: &[u8] = b"drewstone";
@@ -303,7 +286,7 @@ mod tests {
 
 	#[test]
 	fn register_same_type_should_not_work() {
-		with_externalities(&mut new_test_ext(), || {
+		new_test_ext().execute_with(|| {
 			System::set_block_number(1);
 			let identity_type: &[u8] = b"github";
 			let identity: &[u8] = b"drewstone";
@@ -328,7 +311,7 @@ mod tests {
 
 	#[test]
 	fn register_and_attest_should_work() {
-		with_externalities(&mut new_test_ext(), || {
+		new_test_ext().execute_with(|| {
 			System::set_block_number(1);
 			let identity_type: &[u8] = b"github";
 			let identity: &[u8] = b"drewstone";
@@ -340,7 +323,7 @@ mod tests {
 
 			let mut expiration_length = Identity::expiration_length();
 			let mut now = System::block_number();
-			let register_expires_at = now + expiration_length;
+			let _register_expires_at = now + expiration_length;
 
 			let attestation: &[u8] = b"www.proof.com/attest_of_extra_proof";
 			assert_ok!(attest_to_identity(public, identity_hash, attestation));
@@ -348,22 +331,6 @@ mod tests {
 			expiration_length = Identity::expiration_length();
 			now = System::block_number();
 			let _attest_expires_at = now + expiration_length;
-
-			assert_eq!(
-				System::events(),
-				vec![
-					EventRecord {
-						phase: Phase::ApplyExtrinsic(0),
-						event: Event::identity(RawEvent::Register(identity_hash, public, register_expires_at)),
-						topics: vec![],
-					},
-					EventRecord {
-						phase: Phase::ApplyExtrinsic(0),
-						event: Event::identity(RawEvent::Attest(attestation.to_vec(), identity_hash, public, identity_type.to_vec(), identity.to_vec())),
-						topics: vec![],
-					}
-				]
-			);
 			assert_eq!(Identity::identities(), vec![identity_hash]);
 			assert_eq!(Identity::identities_pending(), vec![(identity_hash, 10001)]);
 			assert_eq!(
@@ -380,7 +347,7 @@ mod tests {
 
 	#[test]
 	fn register_and_attest_as_one_should_work() {
-		with_externalities(&mut new_test_ext(), || {
+		new_test_ext().execute_with(|| {
 			System::set_block_number(1);
 			let identity_type: &[u8] = b"github";
 			let identity: &[u8] = b"drewstone";
@@ -390,7 +357,7 @@ mod tests {
 
 			let mut expiration_length = Identity::expiration_length();
 			let mut now = System::block_number();
-			let register_expires_at = now + expiration_length;
+			let _register_expires_at = now + expiration_length;
 
 			let attestation: &[u8] = b"www.proof.com/attest_of_extra_proof";
 			assert_ok!(register_and_attest(public, identity_type, identity, attestation));
@@ -399,21 +366,6 @@ mod tests {
 			now = System::block_number();
 			let _attest_expires_at = now + expiration_length;
 
-			assert_eq!(
-				System::events(),
-				vec![
-					EventRecord {
-						phase: Phase::ApplyExtrinsic(0),
-						event: Event::identity(RawEvent::Register(identity_hash, public, register_expires_at)),
-						topics: vec![],
-					},
-					EventRecord {
-						phase: Phase::ApplyExtrinsic(0),
-						event: Event::identity(RawEvent::Attest(attestation.to_vec(), identity_hash, public, identity_type.to_vec(), identity.to_vec())),
-						topics: vec![],
-					}
-				]
-			);
 			assert_eq!(Identity::identities(), vec![identity_hash]);
 			assert_eq!(Identity::identities_pending(), vec![(identity_hash, 10001)]);
 			assert_eq!(
@@ -429,7 +381,7 @@ mod tests {
 
 	#[test]
 	fn attest_without_register_should_not_work() {
-		with_externalities(&mut new_test_ext(), || {
+		new_test_ext().execute_with(|| {
 			System::set_block_number(1);
 			let identity_type: &[u8] = b"github";
 			let identity: &[u8] = b"drewstone";
@@ -449,7 +401,7 @@ mod tests {
 
 	#[test]
 	fn attest_from_different_account_should_not_work() {
-		with_externalities(&mut new_test_ext(), || {
+		new_test_ext().execute_with(|| {
 			System::set_block_number(1);
 
 			let identity_type: &[u8] = b"github";
@@ -475,7 +427,7 @@ mod tests {
 
 	#[test]
 	fn register_attest_and_verify_should_work() {
-		with_externalities(&mut new_test_ext(), || {
+		new_test_ext().execute_with(|| {
 			System::set_block_number(1);
 			let identity_type: &[u8] = b"github";
 			let identity: &[u8] = b"drewstone";
@@ -484,13 +436,15 @@ mod tests {
 			let public = 1_u64;
 
 			let balance = Balances::free_balance(public);
+			println!("{:?}", balance);
 			assert_ok!(register_identity(public, identity_type, identity));
 			let after_register_balance = Balances::free_balance(public);
+			println!("{:?}", after_register_balance);
 			assert_eq!(balance - BOND, after_register_balance);
 
 			let mut expiration_length = Identity::expiration_length();
 			let mut now = System::block_number();
-			let register_expires_at = now + expiration_length;
+			let _register_expires_at = now + expiration_length;
 
 			let attestation: &[u8] = b"www.proof.com/attest_of_extra_proof";
 			assert_ok!(attest_to_identity(public, identity_hash, attestation));
@@ -505,26 +459,6 @@ mod tests {
 			let balance_after_verify = Balances::free_balance(public);
 			assert_eq!(balance, balance_after_verify);
 
-			assert_eq!(
-				System::events(),
-				vec![
-					EventRecord {
-						phase: Phase::ApplyExtrinsic(0),
-						event: Event::identity(RawEvent::Register(identity_hash, public, register_expires_at)),
-						topics: vec![],
-					},
-					EventRecord {
-						phase: Phase::ApplyExtrinsic(0),
-						event: Event::identity(RawEvent::Attest(attestation.to_vec(), identity_hash, public, identity_type.to_vec(), identity.to_vec())),
-						topics: vec![],
-					},
-					EventRecord {
-						phase: Phase::ApplyExtrinsic(0),
-						event: Event::identity(RawEvent::Verify(identity_hash, verifier, identity_type.encode().to_vec(), identity.encode().to_vec())),
-						topics: vec![],
-					}
-				]
-			);
 			assert_eq!(Identity::identities(), vec![identity_hash]);
 			assert_eq!(Identity::identities_pending(), vec![]);
 			assert_eq!(
@@ -541,11 +475,11 @@ mod tests {
 
 	#[test]
 	fn deny_many_should_work() {
-		with_externalities(&mut new_test_ext(), || {
+		new_test_ext().execute_with(|| {
 			System::set_block_number(1);
 			let mut id_hashes = vec![];
-			let test_id_type: &[u8] = b"github";
-			let test_id: Vec<u8> = "drewstone 4".as_bytes().to_vec();
+			let _test_id_type: &[u8] = b"github";
+			let _test_id: Vec<u8> = "drewstone 4".as_bytes().to_vec();
 			for i in 1..5 {
 				let identity_type: &[u8] = b"github";
 				let identity: Vec<u8> = format!("drewstone {}", i).as_bytes().to_vec();
@@ -558,21 +492,12 @@ mod tests {
 
 			let verifier = 1_u64;
 			assert_ok!(deny_many(verifier, &id_hashes, 0));
-			let events = System::events();
-			assert_eq!(
-				events[events.len() - 1],
-				EventRecord {
-						phase: Phase::ApplyExtrinsic(0),
-						event: Event::identity(RawEvent::Denied(id_hashes[id_hashes.len() - 1], verifier, test_id_type.encode().to_vec(), test_id.encode())),
-						topics: vec![],
-				}
-			);
 		});
 	}
 
 	#[test]
 	fn attest_after_verify_should_not_work() {
-		with_externalities(&mut new_test_ext(), || {
+		new_test_ext().execute_with(|| {
 			System::set_block_number(1);
 			let identity_type: &[u8] = b"github";
 			let identity: &[u8] = b"drewstone";
@@ -607,7 +532,7 @@ mod tests {
 
 	#[test]
 	fn verify_from_nonverifier_should_not_work() {
-		with_externalities(&mut new_test_ext(), || {
+		new_test_ext().execute_with(|| {
 			System::set_block_number(1);
 			let identity_type: &[u8] = b"github";
 			let identity: &[u8] = b"drewstone";
@@ -639,7 +564,7 @@ mod tests {
 
 	#[test]
 	fn verify_from_wrong_index_should_not_work() {
-		with_externalities(&mut new_test_ext(), || {
+		new_test_ext().execute_with(|| {
 			System::set_block_number(1);
 			let identity_type: &[u8] = b"github";
 			let identity: &[u8] = b"drewstone";
@@ -671,7 +596,7 @@ mod tests {
 
 	#[test]
 	fn register_should_expire() {
-		with_externalities(&mut new_test_ext(), || {
+		new_test_ext().execute_with(|| {
 			System::set_block_number(1);
 			let identity_type: &[u8] = b"github";
 			let identity: &[u8] = b"drewstone";
@@ -683,7 +608,7 @@ mod tests {
 
 			let expiration_length = Identity::expiration_length();
 			let now = System::block_number();
-			let expires_at = now + expiration_length;
+			let _expires_at = now + expiration_length;
 
 			System::set_block_number(10002);
 			<Identity as OnFinalize<u64>>::on_finalize(10002);
@@ -695,21 +620,6 @@ mod tests {
 				"Identity does not exist"
 			);
 
-			assert_eq!(
-				System::events(),
-				vec![
-					EventRecord {
-						phase: Phase::ApplyExtrinsic(0),
-						event: Event::identity(RawEvent::Register(identity_hash, public, expires_at)),
-						topics: vec![],
-					},
-					EventRecord {
-						phase: Phase::ApplyExtrinsic(0),
-						event: Event::identity(RawEvent::Expired(identity_hash)),
-						topics: vec![],
-					},
-				]
-			);
 			assert_eq!(Identity::identities(), vec![]);
 			assert_eq!(Identity::identities_pending(), vec![]);
 			assert_eq!(Identity::identity_of(identity_hash), None);
@@ -718,7 +628,7 @@ mod tests {
 
 	#[test]
 	fn add_metadata_should_work() {
-		with_externalities(&mut new_test_ext(), || {
+		new_test_ext().execute_with(|| {
 			System::set_block_number(1);
 			let identity_type: &[u8] = b"github";
 			let identity: &[u8] = b"drewstone";
@@ -757,7 +667,7 @@ mod tests {
 
 	#[test]
 	fn add_metadata_without_register_should_not_work() {
-		with_externalities(&mut new_test_ext(), || {
+		new_test_ext().execute_with(|| {
 			System::set_block_number(1);
 			let identity_type: &[u8] = b"github";
 			let identity: &[u8] = b"drewstone";
@@ -779,7 +689,7 @@ mod tests {
 
 	#[test]
 	fn add_metadata_from_different_account_should_not_work() {
-		with_externalities(&mut new_test_ext(), || {
+		new_test_ext().execute_with(|| {
 			System::set_block_number(1);
 
 			let identity_type: &[u8] = b"github";
@@ -808,7 +718,7 @@ mod tests {
 
 	#[test]
 	fn revoke_verified_should_work() {
-		with_externalities(&mut new_test_ext(), || {
+		new_test_ext().execute_with(|| {
 			System::set_block_number(1);
 			let identity_type: &[u8] = b"github";
 			let identity: &[u8] = b"drewstone";
@@ -842,7 +752,7 @@ mod tests {
 
 	#[test]
 	fn revoke_from_wrong_sender_should_not_work() {
-		with_externalities(&mut new_test_ext(), || {
+		new_test_ext().execute_with(|| {
 			System::set_block_number(1);
 			let identity_type: &[u8] = b"github";
 			let identity: &[u8] = b"drewstone";
@@ -863,7 +773,7 @@ mod tests {
 
 	#[test]
 	fn revoke_at_registered_should_work() {
-		with_externalities(&mut new_test_ext(), || {
+		new_test_ext().execute_with(|| {
 			System::set_block_number(1);
 			let identity_type: &[u8] = b"github";
 			let identity: &[u8] = b"drewstone";
@@ -885,7 +795,7 @@ mod tests {
 
 	#[test]
 	fn revoke_at_attested_should_work() {
-		with_externalities(&mut new_test_ext(), || {
+		new_test_ext().execute_with(|| {
 			System::set_block_number(1);
 			let identity_type: &[u8] = b"github";
 			let identity: &[u8] = b"drewstone";
@@ -914,7 +824,7 @@ mod tests {
 
 	#[test]
 	fn register_should_expire_and_work_again() {
-		with_externalities(&mut new_test_ext(), || {
+		new_test_ext().execute_with(|| {
 			System::set_block_number(1);
 			let identity_type: &[u8] = b"github";
 			let identity: &[u8] = b"drewstone";

@@ -37,7 +37,6 @@ use srml_support::traits::{Currency, ReservableCurrency};
 use rstd::prelude::*;
 use runtime_primitives::traits::{Zero, Hash};
 use runtime_support::dispatch::Result;
-use runtime_support::{StorageMap};
 use system::ensure_signed;
 use codec::{Encode, Decode};
 
@@ -269,7 +268,6 @@ impl<T: Trait> Module<T> {
         ensure!(!<IdentityOf<T>>::exists(identity_hash), "Identity already exists");
         // Reserve the registration bond amount
         T::Currency::reserve(&sender, Self::registration_bond()).map_err(|_| "Not enough currency for reserve bond")?;
-
         // reserve identity type
         let mut types = <UsedTypes<T>>::get(sender.clone());
         types.push(identity_type.clone());

@@ -24,30 +24,45 @@ extern crate serde;
 // in the wasm runtime.
 #[cfg(feature = "std")]
 extern crate serde_derive;
+#[macro_use]
+extern crate srml_support;
+
+extern crate parity_codec as codec;
+extern crate sr_io as runtime_io;
+extern crate sr_primitives as runtime_primitives;
+extern crate sr_std as rstd;
+extern crate srml_support as runtime_support;
+extern crate substrate_primitives as primitives;
+
+extern crate srml_system as system;
+extern crate srml_balances as balances;
+
+use sr_primitives::curve::PiecewiseLinear;
 
 pub mod treasury_reward;
 pub use treasury_reward::{Module, Trait, RawEvent, Event};
 
 #[cfg(test)]
 mod tests {
+use super::*;
+	use sr_primitives::traits::OpaqueKeys;
+	use sr_primitives::testing::UintAuthorityId;
 	#[cfg(feature = "std")]
 	use std::{collections::HashSet, cell::RefCell};
-	use sr_io::with_externalities;
-
-
-
-	use super::*;
-	// The testing primitives are very useful for avoiding having to work with signatures
-	// or public keys. `u64` is used as the `AccountId` and no `Signature`s are requried.
-	use sr_primitives::{
-		Perbill, Permill,
-		traits::{BlakeTwo256, IdentityLookup, OpaqueKeys, One, OnFinalize},
-		testing::{Header, UintAuthorityId}
+	use primitives::{H256, crypto::key_types};
+	use rstd::prelude::*;
+	use sr_staking_primitives::SessionIndex;
+	// The testing primitives are very useful for avoiding having to work with
+	// public keys. `u64` is used as the `AccountId` and no `Signature`s are requried.
+	use runtime_primitives::{
+		Perbill, Permill, KeyTypeId,
+		testing::{Header},
+		traits::{OnFinalize, IdentityLookup, One},
 	};
 
 	/// The AccountId alias in this test module.
 	pub type AccountId = u64;
-	pub type Balance = u64;
+	pub type Balance = u128;
 
 	/// Simple structure that exposes how u64 currency can be represented as... u64.
 	pub struct CurrencyToVoteHandler;
@@ -55,9 +70,13 @@ mod tests {
 		fn convert(x: u64) -> u64 { x }
 	}
 	impl sr_primitives::traits::Convert<u128, u64> for CurrencyToVoteHandler {
-		fn convert(x: u128) -> u64 {
-			x as u64
-		}
+		fn convert(x: u128) -> u64 { x as u64 }
+	}
+	impl sr_primitives::traits::Convert<u128, u128> for CurrencyToVoteHandler {
+		fn convert(x: u128) -> u128 { x }
+	}
+	impl sr_primitives::traits::Convert<u64, u128> for CurrencyToVoteHandler {
+		fn convert(x: u64) -> u128 { x as u128 }
 	}
 
 	thread_local! {
@@ -67,6 +86,8 @@ mod tests {
 
 	pub struct TestSessionHandler;
 	impl srml_session::SessionHandler<AccountId> for TestSessionHandler {
+		const KEY_TYPE_IDS: &'static [KeyTypeId] = &[key_types::DUMMY];
+
 		fn on_genesis_session<Ks: OpaqueKeys>(_validators: &[(AccountId, Ks)]) {}
 
 		fn on_new_session<Ks: OpaqueKeys>(
@@ -95,7 +116,7 @@ mod tests {
 	#[derive(Clone, PartialEq, Eq, Debug)]
 	pub struct Test;
 
-	srml_support::parameter_types! {
+	parameter_types! {
 		pub const BlockHashCount: u64 = 250;
 		pub const MaximumBlockWeight: u32 = 1024;
 		pub const MaximumBlockLength: u32 = 2 * 1024;
@@ -104,16 +125,15 @@ mod tests {
 
 	impl system::Trait for Test {
 		type Origin = Origin;
-		type Call = ();
 		type Index = u64;
 		type BlockNumber = u64;
-		type Hash = substrate_primitives::H256;
-		type Hashing = BlakeTwo256;
+		type Call = ();
+		type Hash = H256;
+		type Hashing = ::sr_primitives::traits::BlakeTwo256;
 		type AccountId = u64;
 		type Lookup = IdentityLookup<Self::AccountId>;
 		type Header = Header;
 		type Event = ();
-		type WeightMultiplierUpdate = ();
 		type BlockHashCount = BlockHashCount;
 		type MaximumBlockWeight = MaximumBlockWeight;
 		type MaximumBlockLength = MaximumBlockLength;
@@ -121,34 +141,33 @@ mod tests {
 		type Version = ();
 	}
 
-	srml_support::parameter_types! {
-		pub const ExistentialDeposit: u64 = 0;
-		pub const TransferFee: u64 = 0;
-		pub const CreationFee: u64 = 0;
-		pub const TransactionBaseFee: u64 = 0;
-		pub const TransactionByteFee: u64 = 0;
+	parameter_types! {
+		pub const ExistentialDeposit: u128 = 0;
+		pub const TransferFee: u128 = 0;
+		pub const CreationFee: u128 = 0;
 	}
 
-	impl srml_balances::Trait for Test {
-		type Balance = u64;
-		type OnNewAccount = ();
+	impl balances::Trait for Test {
+		/// The type for recording an account's balance.
+		type Balance = u128;
+		/// What to do if an account's free balance gets zeroed.
 		type OnFreeBalanceZero = ();
+		/// What to do if a new account is created.
+		type OnNewAccount = ();
+		/// The ubiquitous event type.
 		type Event = ();
-		type TransactionPayment = ();
-		type TransferPayment = ();
 		type DustRemoval = ();
+		type TransferPayment = ();
 		type ExistentialDeposit = ExistentialDeposit;
 		type TransferFee = TransferFee;
 		type CreationFee = CreationFee;
-		type TransactionBaseFee = TransactionBaseFee;
-		type TransactionByteFee = TransactionByteFee;
-		type WeightToFee = ();
 	}
 
-	srml_support::parameter_types! {
+	parameter_types! {
 		pub const Period: u64 = 1;
 		pub const Offset: u64 = 0;
 		pub const UncleGenerations: u64 = 0;
+		pub const DisabledValidatorsThreshold: Perbill = Perbill::from_percent(25);
 	}
 
 	impl srml_session::Trait for Test {
@@ -160,6 +179,7 @@ mod tests {
 		type ValidatorId = AccountId;
 		type ValidatorIdOf = srml_staking::StashOf<Test>;
 		type SelectInitialValidators = Staking;
+		type DisabledValidatorsThreshold = DisabledValidatorsThreshold;
 	}
 
 	impl srml_session::historical::Trait for Test {
@@ -175,21 +195,36 @@ mod tests {
 		type OnTimestampSet = ();
 		type MinimumPeriod = MinimumPeriod;
 	}
-	srml_support::parameter_types! {
-		pub const SessionsPerEra: sr_staking_primitives::SessionIndex = 3;
-		pub const BondingDuration: srml_staking::EraIndex = 3;
+
+	srml_staking_reward_curve::build! {
+		const I_NPOS: PiecewiseLinear<'static> = curve!(
+			min_inflation: 0_025_000,
+			max_inflation: 0_100_000,
+			ideal_stake: 0_500_000,
+			falloff: 0_050_000,
+			max_piece_count: 40,
+			test_precision: 0_005_000,
+		);
 	}
+
+	parameter_types! {
+		pub const SessionsPerEra: SessionIndex = 3;
+		pub const BondingDuration: srml_staking::EraIndex = 3;
+		pub const RewardCurve: &'static PiecewiseLinear<'static> = &I_NPOS;
+	}
+
 	impl srml_staking::Trait for Test {
 		type Currency = Balances;
 		type Time = Timestamp;
 		type CurrencyToVote = CurrencyToVoteHandler;
-		type OnRewardMinted = ();
+		type RewardRemainder = ();
 		type Event = ();
 		type Slash = ();
 		type Reward = ();
 		type SessionsPerEra = SessionsPerEra;
 		type BondingDuration = BondingDuration;
 		type SessionInterface = Self;
+		type RewardCurve = RewardCurve;
 	}
 
 	srml_support::parameter_types! {
@@ -204,7 +239,6 @@ mod tests {
 		type ApproveOrigin = srml_system::EnsureRoot<u64>;
 		type RejectOrigin = srml_system::EnsureRoot<u64>;
 		type Event = ();
-		type MintedForSpending = ();
 		type ProposalRejection = ();
 		type ProposalBond = ProposalBond;
 		type ProposalBondMinimum = ProposalBondMinimum;
@@ -237,7 +271,7 @@ mod tests {
 	}
 
 	impl ExtBuilder {
-		fn build(self) -> sr_io::TestExternalities<substrate_primitives::Blake2Hasher> {
+		fn build(self) -> runtime_io::TestExternalities {
 			let balance_factor = if self.existential_deposit > 0 {
 				256
 			} else {
@@ -292,9 +326,7 @@ mod tests {
 	#[test]
 	fn basic_setup_works() {
 		// Verifies initial conditions of mock
-		with_externalities(&mut ExtBuilder::default()
-			.build(),
-		|| {
+		ExtBuilder::default().build().execute_with(|| {
 			// Initial Era and session
 			assert_eq!(Staking::current_era(), 0);
 			let treasury_address = Treasury::account_id();

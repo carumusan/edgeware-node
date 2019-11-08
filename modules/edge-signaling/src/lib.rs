@@ -47,14 +47,13 @@ mod tests {
 	use rstd::prelude::*;
 	use codec::Encode;
 	use runtime_support::dispatch::Result;
-	use system::{EventRecord, Phase};
-	use runtime_io::with_externalities;
+	
 	use primitives::{H256, Blake2Hasher, Hasher};
 	// The testing primitives are very useful for avoiding having to work with signatures
 	// or public keys. `u64` is used as the `AccountId` and no `Signature`s are requried.
 	use runtime_primitives::{
 		Perbill,
-		traits::{BlakeTwo256, OnFinalize, IdentityLookup},
+		traits::{OnFinalize, IdentityLookup},
 		testing::{Header}
 	};
 	use voting::{VoteStage, VoteType};
@@ -62,12 +61,6 @@ mod tests {
 
 	impl_outer_origin! {
 		pub enum Origin for Test {}
-	}
-
-	impl_outer_event! {
-		pub enum Event for Test {
-			voting<T>, balances<T>, signaling<T>,
-		}
 	}
 	
 	#[derive(Clone, PartialEq, Eq, Debug)]
@@ -82,16 +75,15 @@ mod tests {
 
 	impl system::Trait for Test {
 		type Origin = Origin;
-		type Call = ();
 		type Index = u64;
 		type BlockNumber = u64;
+		type Call = ();
 		type Hash = H256;
-		type Hashing = BlakeTwo256;
+		type Hashing = ::sr_primitives::traits::BlakeTwo256;
 		type AccountId = u64;
 		type Lookup = IdentityLookup<Self::AccountId>;
 		type Header = Header;
-		type Event = Event;
-		type WeightMultiplierUpdate = ();
+		type Event = ();
 		type BlockHashCount = BlockHashCount;
 		type MaximumBlockWeight = MaximumBlockWeight;
 		type MaximumBlockLength = MaximumBlockLength;
@@ -100,34 +92,33 @@ mod tests {
 	}
 
 	parameter_types! {
-		pub const ExistentialDeposit: u64 = 0;
-		pub const TransferFee: u64 = 0;
-		pub const CreationFee: u64 = 0;
-		pub const TransactionBaseFee: u64 = 0;
-		pub const TransactionByteFee: u64 = 0;
+		pub const ExistentialDeposit: u128 = 0;
+		pub const TransferFee: u128 = 0;
+		pub const CreationFee: u128 = 0;
 	}
+
 	impl balances::Trait for Test {
-		type Balance = u64;
-		type OnNewAccount = ();
+		/// The type for recording an account's balance.
+		type Balance = u128;
+		/// What to do if an account's free balance gets zeroed.
 		type OnFreeBalanceZero = ();
-		type Event = Event;
-		type TransactionPayment = ();
-		type TransferPayment = ();
+		/// What to do if a new account is created.
+		type OnNewAccount = ();
+		/// The ubiquitous event type.
+		type Event = ();
 		type DustRemoval = ();
+		type TransferPayment = ();
 		type ExistentialDeposit = ExistentialDeposit;
 		type TransferFee = TransferFee;
 		type CreationFee = CreationFee;
-		type TransactionBaseFee = TransactionBaseFee;
-		type TransactionByteFee = TransactionByteFee;
-		type WeightToFee = ();
 	}
 
 	impl voting::Trait for Test {
-		type Event = Event;
+		type Event = ();
 	}
 
 	impl Trait for Test {
-		type Event = Event;
+		type Event = ();
 		type Currency = balances::Module<Self>;
 	}
 
@@ -135,11 +126,11 @@ mod tests {
 	pub type System = system::Module<Test>;
 	pub type Signaling = Module<Test>;
 
-	const BOND: u64 = 10;
+	const BOND: u128 = 10;
 	const YES_VOTE: voting::voting::VoteOutcome = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1];
 	const NO_VOTE: voting::voting::VoteOutcome = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0];
 
-	fn new_test_ext() -> sr_io::TestExternalities<Blake2Hasher> {
+	fn new_test_ext() -> runtime_io::TestExternalities {
 		let mut t = system::GenesisConfig::default().build_storage::<Test>().unwrap();
 		// We use default for brevity, but you can configure as desired if needed.
 		t.0.extend(
@@ -219,55 +210,21 @@ mod tests {
 
 	#[test]
 	fn propose_should_work() {
-		with_externalities(&mut new_test_ext(), || {
+		new_test_ext().execute_with(|| {
 			System::set_block_number(1);
 			let public = get_test_key();
 			let (title, proposal) = generate_proposal();
 			let hash = build_proposal_hash(public, &proposal);
 			let outcomes = vec![YES_VOTE, NO_VOTE];
 			assert_ok!(propose(public, title, proposal, outcomes, VoteType::Binary, TallyType::OneCoin));
-			let vote_id = Signaling::proposal_of(hash).unwrap().vote_id;
-			assert_eq!(System::events(), vec![
-				EventRecord {
-					phase: Phase::ApplyExtrinsic(0),
-					event: Event::voting(voting::RawEvent::VoteCreated(vote_id, public, VoteType::Binary)),
-					topics: vec![],
-				},
-				EventRecord {
-					phase: Phase::ApplyExtrinsic(0),
-					event: Event::signaling(RawEvent::NewProposal(public, hash)),
-					topics: vec![],
-				}]
-			);
-
+			let _vote_id = Signaling::proposal_of(hash).unwrap().vote_id;
 			let title2: &[u8] = b"Proposal 2";
 			let proposal2: &[u8] = b"Proposal 2";
 			let hash2 = build_proposal_hash(public, &proposal2);
 			let outcomes = vec![YES_VOTE, NO_VOTE];
 			assert_ok!(propose(public, title2, proposal2, outcomes, VoteType::Binary, TallyType::OneCoin));
 			let vote_id2 = Signaling::proposal_of(hash2).unwrap().vote_id;
-			assert_eq!(System::events(), vec![
-				EventRecord {
-					phase: Phase::ApplyExtrinsic(0),
-					event: Event::voting(voting::RawEvent::VoteCreated(vote_id, public, VoteType::Binary)),
-					topics: vec![],
-				},
-				EventRecord {
-					phase: Phase::ApplyExtrinsic(0),
-					event: Event::signaling(RawEvent::NewProposal(public, hash)),
-					topics: vec![],
-				},
-				EventRecord {
-					phase: Phase::ApplyExtrinsic(0),
-					event: Event::voting(voting::RawEvent::VoteCreated(vote_id2, public, VoteType::Binary)),
-					topics: vec![],
-				},
-				EventRecord {
-					phase: Phase::ApplyExtrinsic(0),
-					event: Event::signaling(RawEvent::NewProposal(public, hash2)),
-					topics: vec![],
-				},]
-			);
+
 			assert_eq!(Signaling::proposal_count(), 2);
 			assert_eq!(Signaling::inactive_proposals(), vec![(hash, 10001), (hash2, 10001)]);
 			assert_eq!(Signaling::active_proposals(), vec![]);
@@ -292,7 +249,7 @@ mod tests {
 
 	#[test]
 	fn propose_duplicate_should_fail() {
-		with_externalities(&mut new_test_ext(), || {
+		new_test_ext().execute_with(|| {
 			System::set_block_number(1);
 			let public = get_test_key();
 			let (title, proposal) = generate_proposal();
@@ -314,7 +271,7 @@ mod tests {
 
 	#[test]
 	fn propose_empty_should_fail() {
-		with_externalities(&mut new_test_ext(), || {
+		new_test_ext().execute_with(|| {
 			System::set_block_number(1);
 			let public = get_test_key();
 			let (title, _) = generate_proposal();
@@ -330,7 +287,7 @@ mod tests {
 
 	#[test]
 	fn propose_empty_title_should_fail() {
-		with_externalities(&mut new_test_ext(), || {
+		new_test_ext().execute_with(|| {
 			System::set_block_number(1);
 			let public = get_test_key();
 			let (_, proposal) = generate_proposal();
@@ -346,7 +303,7 @@ mod tests {
 
 	#[test]
 	fn advance_proposal_should_work() {
-		with_externalities(&mut new_test_ext(), || {
+		new_test_ext().execute_with(|| {
 			System::set_block_number(1);
 			let public = get_test_key();
 			let (title, proposal) = generate_proposal();
@@ -359,30 +316,8 @@ mod tests {
 
 			let vote_time = Signaling::voting_length();
 			let now = System::block_number();
-			let vote_ends_at = now + vote_time;
+			let _vote_ends_at = now + vote_time;
 
-			assert_eq!(System::events(), vec![
-				EventRecord {
-					phase: Phase::ApplyExtrinsic(0),
-					event: Event::voting(voting::RawEvent::VoteCreated(vote_id, public, VoteType::Binary)),
-					topics: vec![],
-				},
-				EventRecord {
-					phase: Phase::ApplyExtrinsic(0),
-					event: Event::signaling(RawEvent::NewProposal(public, hash)),
-					topics: vec![],
-				},
-				EventRecord {
-					phase: Phase::ApplyExtrinsic(0),
-					event: Event::voting(voting::RawEvent::VoteAdvanced(vote_id, VoteStage::PreVoting, VoteStage::Voting)),
-					topics: vec![],
-				},
-				EventRecord {
-					phase: Phase::ApplyExtrinsic(0),
-					event: Event::signaling(RawEvent::VotingStarted(hash, vote_id, vote_ends_at)),
-					topics: vec![],
-				},]
-			);
 			assert_eq!(Signaling::active_proposals(), vec![(hash, 10001)]);
 			assert_eq!(
 				Signaling::proposal_of(hash),
@@ -397,7 +332,7 @@ mod tests {
 
 	#[test]
 	fn advance_proposal_if_voting_should_fail() {
-		with_externalities(&mut new_test_ext(), || {
+		new_test_ext().execute_with(|| {
 			System::set_block_number(1);
 			let public = get_test_key();
 			let (title, proposal) = generate_proposal();
@@ -421,7 +356,7 @@ mod tests {
 
 	#[test]
 	fn voting_proposal_should_advance() {
-		with_externalities(&mut new_test_ext(), || {
+		new_test_ext().execute_with(|| {
 			System::set_block_number(1);
 			let public = get_test_key();
 			let (title, proposal) = generate_proposal();
@@ -434,7 +369,7 @@ mod tests {
 
 			let vote_time = Signaling::voting_length();
 			let now = System::block_number();
-			let vote_ends_at = now + vote_time;
+			let _vote_ends_at = now + vote_time;
 
 			assert_eq!(Signaling::active_proposals(), vec![(hash, 10001)]);
 			assert_eq!(
@@ -450,65 +385,9 @@ mod tests {
 			<Signaling as OnFinalize<u64>>::on_finalize(2);
 			System::set_block_number(3);
 
-			assert_eq!(System::events(), vec![
-				EventRecord {
-					phase: Phase::ApplyExtrinsic(0),
-					event: Event::voting(voting::RawEvent::VoteCreated(vote_id, public, VoteType::Binary)),
-					topics: vec![],
-				},
-				EventRecord {
-					phase: Phase::ApplyExtrinsic(0),
-					event: Event::signaling(RawEvent::NewProposal(public, hash)),
-					topics: vec![],
-				},
-				EventRecord {
-					phase: Phase::ApplyExtrinsic(0),
-					event: Event::voting(voting::RawEvent::VoteAdvanced(vote_id, VoteStage::PreVoting, VoteStage::Voting)),
-					topics: vec![],
-				},
-				EventRecord {
-					phase: Phase::ApplyExtrinsic(0),
-					event: Event::signaling(RawEvent::VotingStarted(hash, vote_id, vote_ends_at)),
-					topics: vec![],
-				},]
-			);
-
 			System::set_block_number(10002);
 			<Signaling as OnFinalize<u64>>::on_finalize(10002);
 			System::set_block_number(10003);
-
-			assert_eq!(System::events(), vec![
-				EventRecord {
-					phase: Phase::ApplyExtrinsic(0),
-					event: Event::voting(voting::RawEvent::VoteCreated(vote_id, public, VoteType::Binary)),
-					topics: vec![],
-				},
-				EventRecord {
-					phase: Phase::ApplyExtrinsic(0),
-					event: Event::signaling(RawEvent::NewProposal(public, hash)),
-					topics: vec![],
-				},
-				EventRecord {
-					phase: Phase::ApplyExtrinsic(0),
-					event: Event::voting(voting::RawEvent::VoteAdvanced(vote_id, VoteStage::PreVoting, VoteStage::Voting)),
-					topics: vec![],
-				},
-				EventRecord {
-					phase: Phase::ApplyExtrinsic(0),
-					event: Event::signaling(RawEvent::VotingStarted(hash, vote_id, vote_ends_at)),
-					topics: vec![],
-				},
-				EventRecord {
-					phase: Phase::ApplyExtrinsic(0),
-					event: Event::voting(voting::RawEvent::VoteAdvanced(vote_id, VoteStage::Voting, VoteStage::Completed)),
-					topics: vec![],
-				},
-				EventRecord {
-					phase: Phase::ApplyExtrinsic(0),
-					event: Event::signaling(RawEvent::VotingCompleted(hash, vote_id)),
-					topics: vec![],
-				}]
-			);
 
 			assert_eq!(Signaling::active_proposals(), vec![]);
 			assert_eq!(
@@ -524,7 +403,7 @@ mod tests {
 
 	#[test]
 	fn advance_proposal_if_completed_should_fail() {
-		with_externalities(&mut new_test_ext(), || {
+		new_test_ext().execute_with(|| {
 			System::set_block_number(1);
 			let public = get_test_key();
 			let (title, proposal) = generate_proposal();
@@ -551,7 +430,7 @@ mod tests {
 
 	#[test]
 	fn non_author_advance_should_fail() {
-		with_externalities(&mut new_test_ext(), || {
+		new_test_ext().execute_with(|| {
 			System::set_block_number(1);
 			let public = get_test_key();
 			let (title, proposal) = generate_proposal();
@@ -574,7 +453,7 @@ mod tests {
 
 	#[test]
 	fn creating_proposal_with_insufficient_balance_fails() {
-		with_externalities(&mut new_test_ext(), || {
+		new_test_ext().execute_with(|| {
 			System::set_block_number(1);
 			let public = 100_u64;
 			let (title, proposal) = generate_proposal();
@@ -588,7 +467,7 @@ mod tests {
 
 	#[test]
 	fn completed_proposal_should_return_creation_bond() {
-		with_externalities(&mut new_test_ext(), || {
+		new_test_ext().execute_with(|| {
 			System::set_block_number(1);
 			let public = get_test_key();
 			let (title, proposal) = generate_proposal();
@@ -611,7 +490,7 @@ mod tests {
 
 	#[test]
 	fn expired_inactive_proposal_should_return_creation_bond() {
-		with_externalities(&mut new_test_ext(), || {
+		new_test_ext().execute_with(|| {
 			System::set_block_number(1);
 			let public = get_test_key();
 			let (title, proposal) = generate_proposal();
@@ -636,7 +515,7 @@ mod tests {
 
 	#[test]
 	fn completed_proposal_should_remain_before_deletion() {
-		with_externalities(&mut new_test_ext(), || {
+		new_test_ext().execute_with(|| {
 			System::set_block_number(1);
 			let public = get_test_key();
 			let (title, proposal) = generate_proposal();

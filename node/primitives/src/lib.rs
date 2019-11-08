@@ -31,13 +31,11 @@ pub type BlockNumber = u32;
 pub type Nonce = u32;
 
 /// Alias to 512-bit hash when used in the context of a transaction signature on the chain.
-pub type Signature = AnySignature;
+pub type Signature = MultiSignature;
 
-/// The type used by authorities to prove their ID.
-pub type AccountSignature = primitives::ed25519::Signature;
-
-/// Alias to pubkey that identifies an account on the chain.
-pub type AccountId = <Signature as Verify>::Signer;
+/// Some way of identifying an account on the chain. We intentionally make it equivalent
+/// to the public key of our transaction signing scheme.
+pub type AccountId = <<Signature as Verify>::Signer as IdentifyAccount>::AccountId;
 
 /// The type for looking up accounts. We don't expect more than 4 billion of them, but you
 /// never know...
