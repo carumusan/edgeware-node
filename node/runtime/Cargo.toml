@@ -79,7 +79,6 @@ std = [
 	"aura-primitives/std",
 	"aura/std",
 	"balances/std",
-	"client/std",
 	"codec/std",
 	"collective/std",
 	"contracts/std",

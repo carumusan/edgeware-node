@@ -1,15 +1,15 @@
 [workspace]
 members = [
-	"node/runtime",
+	"modules/edge-signaling",
+	"modules/edge-identity",
+	"modules/edge-voting",
+	"modules/edge-treasury-reward",
 	"node/cli",
 	"node/executor",
 	"node/primitives",
 	"node/rpc",
 	"node/rpc-client",
-	"modules/edge-signaling",
-	"modules/edge-identity",
-	"modules/edge-voting",
-	"modules/edge-treasury-reward",
+	"node/runtime",
 ]
 
 [profile.release]

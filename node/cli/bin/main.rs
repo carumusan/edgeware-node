@@ -18,11 +18,6 @@
 
 #![warn(missing_docs)]
 
-extern crate substrate_cli as cli;
-extern crate ctrlc;
-extern crate futures;
-
-use cli::VersionInfo;
 use futures::sync::oneshot;
 use futures::{future, Future};
 use std::cell::RefCell;

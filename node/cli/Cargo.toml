@@ -90,7 +90,7 @@ keystore = { package = "substrate-keystore", git = "https://github.com/hicommonw
 aura = { package = "substrate-consensus-aura", git = "https://github.com/hicommonwealth/substrate.git", branch = "develop" }
 consensus-common = { package = "substrate-consensus-common", git = "https://github.com/hicommonwealth/substrate.git", branch = "develop" }
 service-test = { package = "substrate-service-test", git = "https://github.com/hicommonwealth/substrate.git", branch = "develop" }
-futures03 = { package = "futures-preview", version = "0.3.0-alpha.19" }
+futures03 = { package = "futures-preview", version = "0.3.0-alpha.19", features = ["compat"] }
 tempfile = "3.1.0"
 
 [build-dependencies]
@@ -101,18 +101,6 @@ vergen = "3.0.4"
 
 [features]
 default = ["cli"]
-browser = [
-	"clear_on_drop",
-	"console_error_panic_hook",
-	"console_log",
-	"js-sys",
-	"libp2p",
-	"wasm-bindgen",
-	"wasm-bindgen-futures",
-	"kvdb-memorydb",
-	"rand/wasm-bindgen",
-	"rand6"
-]
 cli = [
 	"substrate-cli",
 	"transaction-factory",
