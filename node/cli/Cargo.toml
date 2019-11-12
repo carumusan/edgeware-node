@@ -101,6 +101,18 @@ vergen = "3.0.4"
 
 [features]
 default = ["cli"]
+browser = [
+	"clear_on_drop",
+	"console_error_panic_hook",
+	"console_log",
+	"js-sys",
+	"libp2p",
+	"wasm-bindgen",
+	"wasm-bindgen-futures",
+	"kvdb-memorydb",
+	"rand/wasm-bindgen",
+	"rand6"
+]
 cli = [
 	"substrate-cli",
 	"transaction-factory",
