@@ -948,6 +948,7 @@ version = "1.0.0"
 dependencies = [
  "pretty_assertions 0.6.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "sr-primitives 2.0.0 (git+https://github.com/hicommonwealth/substrate.git?branch=develop)",
+ "substrate-client 2.0.0 (git+https://github.com/hicommonwealth/substrate.git?branch=develop)",
  "substrate-consensus-aura-primitives 2.0.0 (git+https://github.com/hicommonwealth/substrate.git?branch=develop)",
  "substrate-primitives 2.0.0 (git+https://github.com/hicommonwealth/substrate.git?branch=develop)",
  "substrate-serializer 2.0.0 (git+https://github.com/hicommonwealth/substrate.git?branch=develop)",

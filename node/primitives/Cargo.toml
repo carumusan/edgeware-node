@@ -8,6 +8,7 @@ edition = "2018"
 primitives = { package = "substrate-primitives", git = "https://github.com/hicommonwealth/substrate.git", branch = "develop", default-features = false }
 sr-primitives = { git = "https://github.com/hicommonwealth/substrate.git", branch = "develop", default-features = false }
 consensus-aura = { package = "substrate-consensus-aura-primitives", git = "https://github.com/hicommonwealth/substrate.git", branch = "develop", default_features = false }
+client = { package = "substrate-client", git = "https://github.com/hicommonwealth/substrate.git", branch = "develop", default-features = false }
 
 [dev-dependencies]
 substrate-serializer = { git = "https://github.com/hicommonwealth/substrate.git", branch = "develop" }
