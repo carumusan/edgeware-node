@@ -27,40 +27,39 @@ use edge_treasury_reward::treasury_reward;
 use parity_codec as codec;
 use rstd::prelude::*;
 use support::{
-	construct_runtime, parameter_types, traits::{SplitTwoWays, Currency}
+	construct_runtime, parameter_types, traits::{SplitTwoWays, Currency, Randomness}
 };
-use substrate_primitives::u32_trait::{_1, _2, _3, _4};
+use primitives::u32_trait::{_1, _2, _3, _4};
 use edgeware_primitives::{
 	AccountId, AccountIndex, AuraId, Balance, BlockNumber, Hash, Index,
 	Moment, Signature
 };
-use grandpa::fg_primitives::{self};
-use client::{
-	block_builder::api::{self as block_builder_api, InherentData, CheckInherentsResult},
-	runtime_api as client_api, impl_runtime_apis
-};
-use runtime_primitives::{ApplyResult, impl_opaque_keys, generic, create_runtime_str, key_types};
-use runtime_primitives::curve::PiecewiseLinear;
-use runtime_primitives::transaction_validity::{InvalidTransaction, TransactionValidity, TransactionValidityError};
-use runtime_primitives::weights::{Weight, DispatchInfo};
-use runtime_primitives::traits::{
-	self, BlakeTwo256, Block as BlockT, NumberFor, StaticLookup
+use sr_api::impl_runtime_apis;
+use sr_primitives::{Permill, Perbill, ApplyResult, impl_opaque_keys, generic, create_runtime_str};
+use sr_primitives::curve::PiecewiseLinear;
+use sr_primitives::transaction_validity::TransactionValidity;
+use sr_primitives::weights::Weight;
+use sr_primitives::traits::{
+	self, BlakeTwo256, Block as BlockT, NumberFor, StaticLookup, SaturatedConversion,
+	OpaqueKeys,
 };
 use version::RuntimeVersion;
-use elections::VoteIndex;
 #[cfg(any(feature = "std", test))]
 use version::NativeVersion;
-use substrate_primitives::OpaqueMetadata;
-use grandpa::{AuthorityId as GrandpaId, AuthorityWeight as GrandpaWeight};
-use finality_tracker::{DEFAULT_REPORT_LATENCY, DEFAULT_WINDOW_SIZE};
+use primitives::OpaqueMetadata;
+use grandpa::AuthorityList as GrandpaAuthorityList;
+use grandpa::fg_primitives;
+use im_online::sr25519::{AuthorityId as ImOnlineId};
+use transaction_payment_rpc_runtime_api::RuntimeDispatchInfo;
+use contracts_rpc_runtime_api::ContractExecResult;
 use system::offchain::TransactionSubmitter;
+use inherents::{InherentData, CheckInherentsResult};
 
 #[cfg(any(feature = "std", test))]
-pub use runtime_primitives::BuildStorage;
+pub use sr_primitives::BuildStorage;
 pub use timestamp::Call as TimestampCall;
 pub use balances::Call as BalancesCall;
 pub use contracts::Gas;
-pub use runtime_primitives::{Permill, Perbill};
 pub use support::StorageValue;
 pub use staking::StakerStatus;
 
@@ -70,9 +69,8 @@ use codec::{Encode, Decode};
 
 /// Implementations of some helper traits passed into runtime modules as associated types.
 pub mod impls;
-use impls::{
-	CurrencyToVoteHandler, WeightMultiplierUpdateHandler, WeightToFee, Author,
-};
+use impls::{CurrencyToVoteHandler, Author, LinearWeightToFee, TargetedFeeAdjustment};
+
 
 /// Constant values used within the runtime.
 pub mod constants;
