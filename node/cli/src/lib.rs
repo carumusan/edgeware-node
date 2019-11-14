@@ -58,3 +58,9 @@ impl ChainSpec {
 	}
 }
 
+fn load_spec(id: &str) -> Result<Option<chain_spec::ChainSpec>, String> {
+	Ok(match ChainSpec::from(id) {
+		Some(spec) => Some(spec.load()?),
+		None => None,
+	})
+}

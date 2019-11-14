@@ -14,60 +14,110 @@
 // You should have received a copy of the GNU General Public License
 // along with Edgeware.  If not, see <http://www.gnu.org/licenses/>
 
-#![warn(missing_docs)]
-#![warn(unused_extern_crates)]
-
 use client::ExecutionStrategies;
 use edgeware_service as service;
-use substrate_service;
-
-#[macro_use]
-extern crate log;
-
-mod factory_impl;
-mod chain_spec;
-
-use transaction_factory::RuntimeAdapter;
-use crate::factory_impl::FactoryState;
+pub use substrate_cli::error;
 use tokio::prelude::Future;
 use tokio::runtime::{Builder as RuntimeBuilder, Runtime};
-
-use chain_spec::ChainSpec;
+pub use substrate_cli::{VersionInfo, IntoExit, NoCustom, SharedParams, ExecutionStrategyParam};
+use substrate_service::{AbstractService, Roles as ServiceRoles, Configuration};
+use log::info;
 use structopt::{StructOpt, clap::App};
+use substrate_cli::{display_role, parse_and_prepare, AugmentClap, GetLogFilter, ParseAndPrepare};
+use crate::{service, ChainSpec, load_spec};
+use crate::factory_impl::FactoryState;
+use transaction_factory::RuntimeAdapter;
+use client::ExecutionStrategies;
 
-use substrate_service::{AbstractService, Roles as ServiceRoles};
-use substrate_cli as cli;
-use exit_future;
+/// Custom subcommands.
+#[derive(Clone, Debug, StructOpt)]
+pub enum CustomSubcommands {
+	/// The custom factory subcommmand for manufacturing transactions.
+	#[structopt(
+		name = "factory",
+		about = "Manufactures num transactions from Alice to random accounts. \
+		Only supported for development or local testnet."
+	)]
+	Factory(FactoryCmd),
+}
 
-pub use cli::{AugmentClap, GetLogFilter, parse_and_prepare, ParseAndPrepare};
-pub use cli::{VersionInfo, IntoExit, NoCustom, SharedParams, ExecutionStrategyParam};
-pub use cli::error;
+impl GetLogFilter for CustomSubcommands {
+	fn get_log_filter(&self) -> Option<String> {
+		None
+	}
+}
 
-use aura::{import_queue, SlotDuration};
-use aura_primitives::ed25519::AuthorityPair as AuraAuthorityPair;
+/// The `factory` command used to generate transactions.
+/// Please note: this command currently only works on an empty database!
+#[derive(Debug, StructOpt, Clone)]
+pub struct FactoryCmd {
+	/// How often to repeat. This option only has an effect in mode `MasterToNToM`.
+	#[structopt(long="rounds", default_value = "1")]
+	pub rounds: u64,
 
-fn load_spec(id: &str) -> Result<Option<service::chain_spec::ChainSpec>, String> {
-	Ok(match ChainSpec::from(id) {
-		Some(spec) => Some(spec.load()?),
-		None => None,
-	})
+	/// MasterToN: Manufacture `num` transactions from the master account
+	///            to `num` randomly created accounts, one each.
+	///
+	/// MasterTo1: Manufacture `num` transactions from the master account
+	///            to exactly one other randomly created account.
+	///
+	/// MasterToNToM: Manufacture `num` transactions from the master account
+	///               to `num` randomly created accounts.
+	///               From each of these randomly created accounts manufacture
+	///               a transaction to another randomly created account.
+	///               Repeat this `rounds` times. If `rounds` = 1 the behavior
+	///               is the same as `MasterToN`.{n}
+	///               A -> B, A -> C, A -> D, ... x `num`{n}
+	///               B -> E, C -> F, D -> G, ...{n}
+	///               ... x `rounds`
+	///
+	/// These three modes control manufacturing.
+	#[structopt(long="mode", default_value = "MasterToN")]
+	pub mode: transaction_factory::Mode,
+
+	/// Number of transactions to generate. In mode `MasterNToNToM` this is
+	/// the number of transactions per round.
+	#[structopt(long="num", default_value = "8")]
+	pub num: u64,
+
+	#[allow(missing_docs)]
+	#[structopt(flatten)]
+	pub shared_params: SharedParams,
+
+	/// The means of execution used when calling into the runtime while importing blocks.
+	#[structopt(
+		long = "execution",
+		value_name = "STRATEGY",
+		possible_values = &ExecutionStrategyParam::variants(),
+		case_insensitive = true,
+		default_value = "NativeElseWasm"
+	)]
+	pub execution: ExecutionStrategyParam,
+}
+
+impl AugmentClap for FactoryCmd {
+	fn augment_clap<'a, 'b>(app: App<'a, 'b>) -> App<'a, 'b> {
+		FactoryCmd::augment_clap(app)
+	}
 }
 
 /// Parse command line arguments into service configuration.
-pub fn run<I, T, E>(args: I, exit: E, version: cli::VersionInfo) -> error::Result<()> where
+pub fn run<I, T, E>(args: I, exit: E, version: substrate_cli::VersionInfo) -> error::Result<()> where
 	I: IntoIterator<Item = T>,
 	T: Into<std::ffi::OsString> + Clone,
 	E: IntoExit,
 {
+	type Config<A, B> = Configuration<(), A, B>;
+
 	match parse_and_prepare::<CustomSubcommands, NoCustom, _>(&version, "edgeware-node", args) {
-		ParseAndPrepare::Run(cmd) => cmd.run::<(), _, _, _, _>(load_spec, exit,
-		|exit, _cli_args, _custom_args, config| {
+		ParseAndPrepare::Run(cmd) => cmd.run(load_spec, exit,
+		|exit, _cli_args, _custom_args, config: Config<_, _>| {
 			info!("{}", version.name);
 			info!("  version {}", config.full_version());
 			info!("  by Commonwealth Labs, 2018-2019");
 			info!("Chain specification: {}", config.chain_spec.name());
 			info!("Node name: {}", config.name);
-			info!("Roles: {:?}", config.roles);
+			info!("Roles: {}", display_role(&config));
 			let runtime = RuntimeBuilder::new().name_prefix("main-tokio-").build()
 				.map_err(|e| format!("{:?}", e))?;
 			match config.roles {
@@ -139,7 +189,7 @@ where
 {
 	let (exit_send, exit) = exit_future::signal();
 
-	let informant = cli::informant::build(&service);
+	let informant = substrate_cli::informant::build(&service);
 	runtime.executor().spawn(exit.until(informant).map(|_| ()));
 
 	// we eagerly drop the service so that the internal exit future is fired,

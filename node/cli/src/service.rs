@@ -88,7 +88,7 @@ macro_rules! new_full_start {
 					Some(transaction_pool),
 				)?;
 
-				import_setup = Some((block_import.clone(), link_half));
+				import_setup = Some((block_import.clone(), grandpa_link));
 				Ok(import_queue)
 			})?
 			.with_rpc_extensions(|client, pool, _backend| -> RpcExtension {
@@ -127,6 +127,10 @@ macro_rules! new_full {
 
 		let (builder, mut import_setup, inherent_data_providers) = new_full_start!($config);
 
+		let (block_import, grandpa_link) =
+			import_setup.take()
+				.expect("Link Half and Block Import are present for Full Services or setup failed before. qed");
+
 		// Dht event channel from the network to the authority discovery module. Use bounded channel to ensure
 		// back-pressure. Authority discovery is triggering one event per authority within the current authority set.
 		// This estimates the authority set size to be somewhere below 10 000 thereby setting the channel buffer size to
@@ -140,11 +144,6 @@ macro_rules! new_full {
 			)?
 			.with_dht_event_tx(dht_event_tx)?
 			.build()?;
-
-		let (block_import, link_half) = import_setup.take()
-			.expect("Link Half and Block Import are present for Full Services or setup failed before. qed");
-
-		($with_startup_data)(&block_import, &link_half);
 
 		if participates_in_consensus {
 			let proposer = substrate_basic_authorship::ProposerFactory {
@@ -167,8 +166,9 @@ macro_rules! new_full {
 				force_authoring,
 				service.keystore(),
 			)?;
-			let select = aura.select(service.on_exit()).then(|_| Ok(()));
-			service.spawn_task(Box::new(select));
+			// the AURA authoring task is considered essential, i.e. if it
+			// fails we take down the service with it.
+			service.spawn_essential_task(aura);
 		}
 
 		// if the node isn't actively participating in consensus then it doesn't
@@ -296,13 +296,6 @@ pub fn new_light<C: Send + Default + 'static>(config: NodeConfiguration<C>)
 			let finality_proof_import = grandpa_block_import.clone();
 			let finality_proof_request_builder =
 				finality_proof_import.create_finality_proof_request_builder();
-
-			// let (babe_block_import, babe_link) = babe::block_import(
-			// 	babe::Config::get_or_compute(&*client)?,
-			// 	grandpa_block_import,
-			// 	client.clone(),
-			// 	client.clone(),
-			// )?;
 
 			let import_queue = import_queue::<_, _, AuraAuthorityPair, _>(
 				SlotDuration::get_or_compute(&*client)?,
