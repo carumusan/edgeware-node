@@ -346,7 +346,7 @@ decl_event!(
 decl_storage! {
     trait Store for Module<T: Trait> as Identity {
         /// The hashed identities.
-        pub Identities get(identities): Vec<(T::Hash)>;
+        pub Identities get(identities): Vec<T::Hash>;
         /// Actual identity for a given hash, if it's current.
         pub IdentityOf get(identity_of): map T::Hash => Option<IdentityRecord<T::AccountId, T::BlockNumber>>;
         /// List of identities awaiting attestation or verification and associated expirations

@@ -28,6 +28,7 @@ rstd = { package = "sr-std", git = "https://github.com/hicommonwealth/substrate.
 version = { package = "sr-version", git = "https://github.com/hicommonwealth/substrate.git", branch = "develop", default-features = false }
 substrate-session = { git = "https://github.com/hicommonwealth/substrate.git", branch = "develop", default-features = false }
 substrate-keyring = { git = "https://github.com/hicommonwealth/substrate.git", branch = "develop", optional = true }
+tx-pool-api = { package = "substrate-transaction-pool-runtime-api", git = "https://github.com/hicommonwealth/substrate.git", branch = "develop", default-features = false }
 
 # srml dependencies
 authorship = { package = "srml-authorship", git = "https://github.com/hicommonwealth/substrate.git", branch = "develop", default-features = false }
@@ -114,6 +115,7 @@ std = [
 	"system-rpc-runtime-api/std",
 	"timestamp/std",
 	"treasury/std",
+	"tx-pool-api/std",
 	"utility/std",
 	"transaction-payment/std",
 	"transaction-payment-rpc-runtime-api/std",
