@@ -10,7 +10,7 @@ safe-mix = { version = "1.0", default-features = false }
 parity-codec = { package = "parity-scale-codec", version = "1.0.6", default-features = false, features = ["derive"] }
 substrate-keyring = { git = "https://github.com/hicommonwealth/substrate.git", branch = "develop", optional = true }
 substrate-primitives = { git = "https://github.com/hicommonwealth/substrate.git", branch = "develop", default-features = false }
-sr-std = { git = "https://github.com/hicommonwealth/substrate.git", branch = "develop", default-features = false }
+rstd = { package = "sr-std", git = "https://github.com/hicommonwealth/substrate.git", branch = "develop", default-features = false }
 sr-io = { git = "https://github.com/hicommonwealth/substrate.git", branch = "develop", default-features = false }
 sr-primitives = { git = "https://github.com/hicommonwealth/substrate.git", branch = "develop", default-features = false }
 srml-support = { git = "https://github.com/hicommonwealth/substrate.git", branch = "develop", default-features = false }
@@ -25,8 +25,7 @@ std = [
 	"safe-mix/std",
 	"parity-codec/std",
 	"substrate-primitives/std",
-	"sr-std/std",
-	"sr-io/std",
+	"rstd/std",
 	"srml-support/std",
 	"sr-primitives/std",
 	"srml-system/std",

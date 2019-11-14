@@ -65,10 +65,10 @@ pub type BlockId = generic::BlockId<Block>;
 
 /// The aura crypto scheme defined via the keypair type.
 #[cfg(feature = "std")]
-pub type AuraPair = consensus_aura::ed25519::AuthorityPair;
+pub type AuraPair = aura_primitives::ed25519::AuthorityPair;
 
 /// The Ed25519 pub key of an session that belongs to an Aura authority of the chain.
-pub type AuraId = consensus_aura::ed25519::AuthorityId;
+pub type AuraId = aura_primitives::ed25519::AuthorityId;
 
 /// Alias to the signature scheme used for Aura authority signatures.
-pub type AuraSignature = consensus_aura::ed25519::AuthoritySignature;
+pub type AuraSignature = aura_primitives::ed25519::AuthoritySignature;

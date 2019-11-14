@@ -15,21 +15,14 @@
 // You should have received a copy of the GNU General Public License
 // along with Edgeware.  If not, see <http://www.gnu.org/licenses/>.
 
-#[cfg(feature = "std")]
-extern crate parity_codec as codec;
-extern crate substrate_primitives as primitives;
-extern crate sr_std as rstd;
-extern crate srml_support as runtime_support;
-extern crate sr_primitives as runtime_primitives;
-extern crate sr_io as runtime_io;
 extern crate srml_system as system;
 extern crate edge_voting as voting;
 
 use rstd::prelude::*;
 use srml_support::traits::{Currency, ReservableCurrency};
 use system::ensure_signed;
-use runtime_support::dispatch::Result;
-use runtime_primitives::traits::{Hash};
+use srml_support::dispatch::Result;
+use sr_primitives::traits::{Hash};
 use codec::{Encode, Decode};
 
 pub use voting::voting::{VoteType, VoteOutcome, VoteStage, TallyType};

@@ -52,8 +52,5 @@ fn main() {
 		support_url: "https://github.com/hicommonwealth/edgeware-node/issues/new",
 	};
 
-	if let Err(e) = edgeware_cli::run(::std::env::args(), Exit, version) {
-		eprintln!("Error starting the node: {}\n\n{:?}", e, e);
-		std::process::exit(1)
-	}
+	edgeware_cli::run(::std::env::args(), Exit, version)
 }

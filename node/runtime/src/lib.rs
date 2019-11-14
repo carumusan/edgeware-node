@@ -71,7 +71,6 @@ use codec::{Encode, Decode};
 pub mod impls;
 use impls::{CurrencyToVoteHandler, Author, LinearWeightToFee, TargetedFeeAdjustment};
 
-
 /// Constant values used within the runtime.
 pub mod constants;
 use constants::{time::*, currency::*};
@@ -645,7 +644,7 @@ impl_runtime_apis! {
 		}
 	}
 
-	impl consensus_aura::AuraApi<Block, AuraId> for Runtime {
+	impl aura_primitives::AuraApi<Block, AuraId> for Runtime {
 		fn slot_duration() -> u64 {
 			Aura::slot_duration()
 		}

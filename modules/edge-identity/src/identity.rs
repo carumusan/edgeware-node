@@ -17,28 +17,16 @@
 #[cfg(feature = "std")]
 extern crate serde;
 
-// Needed for deriving `Serialize` and `Deserialize` for various types.
-// We only implement the serde traits for std builds - they're unneeded
-// in the wasm runtime.
-#[cfg(feature = "std")]
-extern crate parity_codec as codec;
-extern crate sr_io as runtime_io;
-extern crate sr_primitives as runtime_primitives;
-extern crate sr_std as rstd;
-extern crate srml_support as runtime_support;
-extern crate substrate_primitives as primitives;
-
 extern crate srml_system as system;
 extern crate srml_balances as balances;
-
 
 use srml_support::traits::{Currency, ReservableCurrency};
 
 use rstd::prelude::*;
-use runtime_primitives::traits::{Zero, Hash};
-use runtime_support::dispatch::Result;
+use sr_primitives::traits::{Zero, Hash};
+use srml_support::dispatch::Result;
 use system::ensure_signed;
-use codec::{Encode, Decode};
+use parity_codec::{Encode, Decode};
 
 pub trait Trait: balances::Trait {
     /// The overarching event type.

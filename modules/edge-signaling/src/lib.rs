@@ -24,13 +24,7 @@ extern crate serde;
 // in the wasm runtime.
 #[cfg(feature = "std")]
 extern crate serde_derive;
-#[macro_use]
-extern crate srml_support;
-extern crate parity_codec as codec;
 extern crate substrate_primitives as primitives;
-extern crate sr_std as rstd;
-extern crate srml_support as runtime_support;
-extern crate sr_primitives as runtime_primitives;
 extern crate sr_io as runtime_io;
 
 extern crate srml_balances as balances;
@@ -46,12 +40,12 @@ mod tests {
 	use super::*;
 	use rstd::prelude::*;
 	use codec::Encode;
-	use runtime_support::dispatch::Result;
+	use srml_support::dispatch::Result;
 	
 	use primitives::{H256, Blake2Hasher, Hasher};
 	// The testing primitives are very useful for avoiding having to work with signatures
 	// or public keys. `u64` is used as the `AccountId` and no `Signature`s are requried.
-	use runtime_primitives::{
+	use sr_primitives::{
 		Perbill,
 		traits::{OnFinalize, IdentityLookup},
 		testing::{Header}

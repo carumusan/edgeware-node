@@ -14,15 +14,12 @@
 // You should have received a copy of the GNU General Public License
 // along with Edgeware.  If not, see <http://www.gnu.org/licenses/>.
 
-use sr_std as rstd;
-
-use sr_primitives as runtime_primitives;
 use srml_system as system;
 use srml_treasury as treasury;
 use srml_staking as staking;
 use srml_balances as balances;
 
-use runtime_primitives::{traits::{Zero}};
+use sr_primitives::{traits::{Zero}};
 
 use rstd::prelude::*;
 use srml_support::{

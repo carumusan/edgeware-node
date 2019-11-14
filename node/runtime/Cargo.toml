@@ -73,7 +73,7 @@ edge-treasury-reward = { path = "../../modules/edge-treasury-reward", default-fe
 wasm-builder-runner = { package = "substrate-wasm-builder-runner", version = "1.0.4", git = "https://github.com/hicommonwealth/substrate.git", branch = "develop" }
 
 [dev-dependencies]
-runtime_io = { package = "sr-io", git = "https://github.com/hicommonwealth/substrate.git", branch = "develop" }
+runtime_io = { package = "sr-io", git = "https://github.com/hicommonwealth/substrate.git", branch = "develop", default-features = false }
 
 
 [features]
