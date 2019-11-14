@@ -22,13 +22,13 @@ use rand::{Rng, SeedableRng};
 use rand::rngs::StdRng;
 
 use codec::{Encode, Decode};
-use keyring::sr25519::Keyring;
-use node_runtime::{
+use keyring::ed25519::Keyring;
+use edgeware_runtime::{
 	Call, CheckedExtrinsic, UncheckedExtrinsic, SignedExtra, BalancesCall, ExistentialDeposit,
 	MinimumPeriod
 };
-use node_primitives::Signature;
-use primitives::{sr25519, crypto::Pair};
+use edgeware_primitives::Signature;
+use primitives::{ed25519, crypto::Pair};
 use sr_primitives::{
 	generic::Era, traits::{Block as BlockT, Header as HeaderT, SignedExtension, Verify, IdentifyAccount}
 };
@@ -51,10 +51,10 @@ pub struct FactoryState<N> {
 	num: u32,
 }
 
-type Number = <<node_primitives::Block as BlockT>::Header as HeaderT>::Number;
+type Number = <<edgeware_primitives::Block as BlockT>::Header as HeaderT>::Number;
 
 impl<Number> FactoryState<Number> {
-	fn build_extra(index: node_primitives::Index, phase: u64) -> node_runtime::SignedExtra {
+	fn build_extra(index: edgeware_primitives::Index, phase: u64) -> edgeware_runtime::SignedExtra {
 		(
 			system::CheckVersion::new(),
 			system::CheckGenesis::new(),
@@ -68,12 +68,12 @@ impl<Number> FactoryState<Number> {
 }
 
 impl RuntimeAdapter for FactoryState<Number> {
-	type AccountId = node_primitives::AccountId;
-	type Balance = node_primitives::Balance;
-	type Block = node_primitives::Block;
+	type AccountId = edgeware_primitives::AccountId;
+	type Balance = edgeware_primitives::Balance;
+	type Block = edgeware_primitives::Block;
 	type Phase = sr_primitives::generic::Phase;
-	type Secret = sr25519::Pair;
-	type Index = node_primitives::Index;
+	type Secret = ed25519::Pair;
+	type Index = edgeware_primitives::Index;
 
 	type Number = Number;
 
@@ -181,13 +181,13 @@ impl RuntimeAdapter for FactoryState<Number> {
 
 	/// Generates a random `AccountId` from `seed`.
 	fn gen_random_account_id(seed: &Self::Number) -> Self::AccountId {
-		let pair: sr25519::Pair = sr25519::Pair::from_seed(&gen_seed_bytes(*seed));
+		let pair: ed25519::Pair = ed25519::Pair::from_seed(&gen_seed_bytes(*seed));
 		AccountPublic::from(pair.public()).into_account()
 	}
 
 	/// Generates a random `Secret` from `seed`.
 	fn gen_random_account_secret(seed: &Self::Number) -> Self::Secret {
-		let pair: sr25519::Pair = sr25519::Pair::from_seed(&gen_seed_bytes(*seed));
+		let pair: ed25519::Pair = ed25519::Pair::from_seed(&gen_seed_bytes(*seed));
 		pair
 	}
 
@@ -239,7 +239,7 @@ fn gen_seed_bytes(seed: u32) -> [u8; 32] {
 /// a `CheckedExtrinsics`.
 fn sign<RA: RuntimeAdapter>(
 	xt: CheckedExtrinsic,
-	key: &sr25519::Pair,
+	key: &ed25519::Pair,
 	additional_signed: <SignedExtra as SignedExtension>::AdditionalSigned,
 ) -> <RA::Block as BlockT>::Extrinsic {
 	let s = match xt.signed {
