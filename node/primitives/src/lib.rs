@@ -27,9 +27,6 @@ use sr_primitives::{
 /// An index to a block.
 pub type BlockNumber = u32;
 
-/// An accounts nonce
-pub type Nonce = u32;
-
 /// Alias to 512-bit hash when used in the context of a transaction signature on the chain.
 pub type Signature = MultiSignature;
 
@@ -37,9 +34,8 @@ pub type Signature = MultiSignature;
 /// to the public key of our transaction signing scheme.
 pub type AccountId = <<Signature as Verify>::Signer as IdentifyAccount>::AccountId;
 
-/// The type for looking up accounts. We don't expect more than 4 billion of them, but you
-/// never know...
-pub type AccountIndex = Nonce;
+/// The type for looking up accounts. We don't expect more than 4 billion of them.
+pub type AccountIndex = u32;
 
 /// Balance of an account.
 pub type Balance = u128;
@@ -47,18 +43,8 @@ pub type Balance = u128;
 /// Type used for expressing timestamp.
 pub type Moment = u64;
 
-/// The aura crypto scheme defined via the keypair type.
-#[cfg(feature = "std")]
-pub type AuraPair = consensus_aura::ed25519::AuthorityPair;
-
-/// The Ed25519 pub key of an session that belongs to an Aura authority of the chain.
-pub type AuraId = consensus_aura::ed25519::AuthorityId;
-
-/// Alias to the signature scheme used for Aura authority signatures.
-pub type AuraSignature = consensus_aura::ed25519::AuthoritySignature;
-
 /// Index of a transaction in the chain.
-pub type Index = Nonce;
+pub type Index = u32;
 
 /// A hash of some data used by the chain.
 pub type Hash = primitives::H256;
@@ -73,17 +59,16 @@ pub type DigestItem = generic::DigestItem<Hash>;
 /// Header type.
 pub type Header = generic::Header<BlockNumber, BlakeTwo256>;
 /// Block type.
-pub type Block = generic::Block<Header, UncheckedExtrinsic>;
+pub type Block = generic::Block<Header, OpaqueExtrinsic>;
 /// Block ID.
 pub type BlockId = generic::BlockId<Block>;
 
-/// Opaque, encoded, unchecked extrinsic.
-pub type UncheckedExtrinsic = OpaqueExtrinsic;
+/// The aura crypto scheme defined via the keypair type.
+#[cfg(feature = "std")]
+pub type AuraPair = consensus_aura::ed25519::AuthorityPair;
 
-client::decl_runtime_apis! {
-	/// The API to query account account nonce (aka index).
-	pub trait AccountNonceApi {
-		/// Get current account nonce of given `AccountId`.
-		fn account_nonce(account: AccountId) -> Index;
-	}
-}
+/// The Ed25519 pub key of an session that belongs to an Aura authority of the chain.
+pub type AuraId = consensus_aura::ed25519::AuthorityId;
+
+/// Alias to the signature scheme used for Aura authority signatures.
+pub type AuraSignature = consensus_aura::ed25519::AuthoritySignature;

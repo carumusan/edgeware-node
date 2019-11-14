@@ -120,35 +120,20 @@ parameter_types! {
 }
 
 impl system::Trait for Runtime {
-	/// The identifier used to distinguish between accounts.
-	type AccountId = AccountId;
-	/// The aggregated dispatch type that is available for extrinsics.
-	type Call = Call;
-	/// The lookup mechanism to get account ID from whatever is passed in dispatchers.
-	type Lookup = Indices;
-	/// The index type for storing how many extrinsics an account has signed.
-	type Index = Index;
-	/// The index type for blocks.
-	type BlockNumber = BlockNumber;
-	/// The type for hashing blocks and tries.
-	type Hash = Hash;
-	/// The hashing algorithm used.
-	type Hashing = BlakeTwo256;
-	/// The header type.
-	type Header = generic::Header<BlockNumber, BlakeTwo256>;
-	/// The ubiquitous event type.
-	type Event = Event;
-	/// The ubiquitous origin type.
 	type Origin = Origin;
-	/// Maximum number of block number to block hash mappings to keep (oldest pruned first).
+	type Call = Call;
+	type Index = Index;
+	type BlockNumber = BlockNumber;
+	type Hash = Hash;
+	type Hashing = BlakeTwo256;
+	type AccountId = AccountId;
+	type Lookup = Indices;
+	type Header = generic::Header<BlockNumber, BlakeTwo256>;
+	type Event = Event;
 	type BlockHashCount = BlockHashCount;
-	/// Maximum weight of each block.
 	type MaximumBlockWeight = MaximumBlockWeight;
-	/// Maximum size of all encoded transactions (in bytes) that are allowed in one block.
 	type MaximumBlockLength = MaximumBlockLength;
-	/// Portion of the block weight that is available to all normal transactions.
 	type AvailableBlockRatio = AvailableBlockRatio;
-	/// Version of the runtime.
 	type Version = Version;
 }
 
@@ -210,7 +195,7 @@ impl transaction_payment::Trait for Runtime {
 }
 
 parameter_types! {
-	pub const MinimumPeriod: u64 = (SLOT_DURATION / 2).try_into().unwrap();
+	pub const MinimumPeriod: Moment = SLOT_DURATION / 2;
 }
 
 impl timestamp::Trait for Runtime {
@@ -233,9 +218,9 @@ impl authorship::Trait for Runtime {
 
 impl_opaque_keys! {
 	pub struct SessionKeys {
-		pub aura: AuraId,
-		pub grandpa: GrandpaId,
-		pub im_online: ImOnlineId,
+		pub aura: Aura,
+		pub grandpa: Grandpa,
+		pub im_online: ImOnline,
 	}
 }
 

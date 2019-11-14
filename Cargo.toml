@@ -8,7 +8,6 @@ members = [
 	"node/executor",
 	"node/primitives",
 	"node/rpc",
-	"node/rpc-client",
 	"node/runtime",
 ]
 
