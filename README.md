@@ -63,7 +63,7 @@ cargo build --release
 
 Ensure you have a fresh start if updating from another version:
 ```
-./scripts/purge-chain.sh berlin
+./scripts/purge-chain.sh berlin_edgeware_testnet
 ```
 
 To start up the Edgeware node and connect to the Berlin testnet, run:
