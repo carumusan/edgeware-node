@@ -35,7 +35,7 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
-        tag_name: 4da8fb14776a75d788a7a90c180887375bc9fca8
+        tag_name: tag_4da8fb14776a75d788a7a90c180887375bc9fca8
         release_name: Release 4da8fb14776a75d788a7a90c180887375bc9fca8
     - id: create_archive
       run: |
