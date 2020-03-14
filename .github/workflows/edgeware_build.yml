@@ -23,7 +23,7 @@ jobs:
     - run: bash setup.sh
     - id: create_archive
       run: |
-        ARCHIVE=edgeware-$GITHUB_SHA-macos.tar.gz
+        ARCHIVE=edgeware-$GITHUB_SHA-linux.tar.gz
         tar -czvf $ARCHIVE -C target/release edgeware
         echo ::set-output name=ASSET::$ARCHIVE
     - uses: actions/upload-artifact@v1
