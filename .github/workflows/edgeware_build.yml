@@ -34,7 +34,11 @@ jobs:
         ARCHIVE=edgeware-$GITHUB_SHA-linux.tar.gz
         tar -czvf $ARCHIVE -C target/release edgeware
         echo ::set-output name=ASSET::$ARCHIVE
-    - uses: actions/upload-artifact@v1
+    - uses: actions/upload-release-asset@v1.0.1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
-        name: ${{ steps.create_archive.outputs.ASSET }}
-        path: ${{ steps.create_archive.outputs.ASSET }}
+        upload_url: ${{ github.event.release.upload_url }}
+        asset_path: ${{ steps.create_archive.outputs.ASSET }}
+        asset_name: ${{ steps.create_archive.outputs.ASSET }}
+        asset_content_type: application/gzip
