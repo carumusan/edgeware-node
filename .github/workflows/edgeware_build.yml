@@ -29,6 +29,14 @@ jobs:
         path: target
         key: ${{ runner.os }}-cargo-build-target-${{ hashFiles('**/Cargo.lock') }}
     - run: bash setup.sh
+    - name: Create Release
+      id: create_release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ github.ref }}
+        release_name: Release ${{ github.ref }}
     - id: create_archive
       run: |
         ARCHIVE=edgeware-$GITHUB_SHA-linux.tar.gz
@@ -38,7 +46,7 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
-        upload_url: ${{ github.event.release.upload_url }}
+        upload_url: ${{ steps.create_release.outputs.upload_url }
         asset_path: ${{ steps.create_archive.outputs.ASSET }}
         asset_name: ${{ steps.create_archive.outputs.ASSET }}
         asset_content_type: application/gzip
