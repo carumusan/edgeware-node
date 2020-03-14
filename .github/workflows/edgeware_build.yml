@@ -12,7 +12,7 @@ jobs:
     steps:
     - uses: actions/checkout@v2
       with:
-        ref: 4da8fb1
+        ref: 4da8fb14776a75d788a7a90c180887375bc9fca8
     - name: Cache cargo registry
       uses: actions/cache@v1
       with:
