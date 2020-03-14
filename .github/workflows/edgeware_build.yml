@@ -24,3 +24,7 @@ jobs:
         ARCHIVE=edgeware-$GITHUB_SHA-macos.tar.gz
         tar -czvf $ARCHIVE -C target/release edgeware
         echo ::set-output name=ASSET::$ARCHIVE
+    - uses: actions/upload-artifact@v1
+      with:
+        name: ${{ steps.create_archive.outputs.ASSET }}
+        path: ${{ steps.create_archive.outputs.ASSET }}
